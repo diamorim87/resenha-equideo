@@ -1,0 +1,6 @@
+{
+  "name": "Amorimpec - Resenha Equina",
+  "description": "Ficha e catálogo de resenha zootécnica e gráfica equina, muar e asinina com padrões rurais brasileiros e geração de PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

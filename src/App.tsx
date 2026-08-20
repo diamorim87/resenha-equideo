@@ -1,0 +1,287 @@
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { ResenhaData, SavedResenha } from './types';
+import {
+  SVG_LATERAL_ESQUERDA,
+  SVG_LATERAL_DIREITA,
+  SVG_FRONTAL,
+  SVG_CHANFRO,
+  svgToDataUrl,
+} from './utils/silhouetteSVGs';
+import { compilarResenhaDescritiva } from './utils/anatomicalEngine';
+import { gerarPdfResenha } from './utils/pdfGenerator';
+import { Navbar } from './components/Navbar';
+import { StepIndicator } from './components/StepIndicator';
+import { Step1Data } from './components/Step1Data';
+import { Step2Graphics } from './components/Step2Graphics';
+import { Step3Review } from './components/Step3Review';
+import { GuideModal } from './components/GuideModal';
+import { HistoryModal } from './components/HistoryModal';
+
+const INITIAL_DATA: ResenhaData = {
+  dataCriacao: new Date().toISOString(),
+  propNome: '',
+  propPropriedade: '',
+  propMunicipio: '',
+  propUF: '',
+  propTel: '',
+  resNome: '',
+  resTel: '',
+  resRegistro: '',
+  animNome: '',
+  animEspecie: 'Equina',
+  animSexo: 'Macho Inteiro',
+  animCor: '',
+  animNasc: '',
+  animRaca: '',
+  animChip: '',
+  animDescricao: '',
+  historicoMarcas: [],
+};
+
+const STORAGE_KEY = 'amorimpec_resenhas_v1';
+
+export default function App() {
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [data, setData] = useState<ResenhaData>(INITIAL_DATA);
+  const [historicoMarcas, setHistoricoMarcas] = useState<string[]>([]);
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+  const [savedResenhas, setSavedResenhas] = useState<SavedResenha[]>([]);
+
+  // Referências para os 4 canvases
+  const canvasLatEsq = useRef<HTMLCanvasElement | null>(null);
+  const canvasLatDir = useRef<HTMLCanvasElement | null>(null);
+  const canvasFrontal = useRef<HTMLCanvasElement | null>(null);
+  const canvasChanfro = useRef<HTMLCanvasElement | null>(null);
+
+  // Background Data URLs gerados uma vez
+  const bgDataUrls = useMemo(() => {
+    return {
+      latEsq: svgToDataUrl(SVG_LATERAL_ESQUERDA),
+      latDir: svgToDataUrl(SVG_LATERAL_DIREITA),
+      frontal: svgToDataUrl(SVG_FRONTAL),
+      chanfro: svgToDataUrl(SVG_CHANFRO),
+    };
+  }, []);
+
+  // Carrega histórico do localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setSavedResenhas(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.warn('Erro ao ler localStorage', e);
+    }
+  }, []);
+
+  // Salva no localStorage quando há mudanças relevantes
+  const salvarNoHistoricoLocal = (resenhaParaSalvar: ResenhaData) => {
+    if (!resenhaParaSalvar.animNome && !resenhaParaSalvar.propNome) return;
+    try {
+      const item: SavedResenha = {
+        ...resenhaParaSalvar,
+        id: resenhaParaSalvar.id || `res_${Date.now()}`,
+        dataCriacao: resenhaParaSalvar.dataCriacao || new Date().toISOString(),
+        thumbnails: {},
+      };
+
+      setSavedResenhas((prev) => {
+        const filtered = prev.filter((p) => p.id !== item.id);
+        const updated = [item, ...filtered].slice(0, 20); // guarda até 20 fichas
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
+    } catch (e) {
+      console.warn('Erro ao salvar no histórico', e);
+    }
+  };
+
+  const handleFieldChange = (field: keyof ResenhaData, value: any) => {
+    setData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Navegação entre passos
+  const handleStepClick = (targetStep: number) => {
+    if (targetStep > 1 && currentStep === 1) {
+      if (!data.propNome || !data.propMunicipio || !data.propUF || !data.propTel || !data.resNome || !data.resTel || !data.animNome || !data.animCor || !data.animNasc) {
+        alert('Por favor, preencha os campos obrigatórios marcados com * antes de prosseguir.');
+        return;
+      }
+    }
+
+    if (targetStep === 3 && currentStep !== 3) {
+      prepararResenhaDescritiva();
+    }
+
+    setCurrentStep(targetStep);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const avancarParaEtapa2 = () => {
+    salvarNoHistoricoLocal(data);
+    setCurrentStep(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const prepararResenhaDescritiva = () => {
+    const textoCompilado = compilarResenhaDescritiva(historicoMarcas);
+    // Se o usuário ainda não tiver customizado o texto ou se estiver padrão, substitui
+    if (
+      !data.animDescricao ||
+      data.animDescricao.includes('RESENHA DESCRITIVA') ||
+      data.animDescricao.includes('particularidades anatômicas') ||
+      data.animDescricao.includes('Sem particularidades')
+    ) {
+      setData((prev) => ({ ...prev, animDescricao: textoCompilado }));
+    }
+  };
+
+  const avancarParaEtapa3 = () => {
+    prepararResenhaDescritiva();
+    salvarNoHistoricoLocal({ ...data, historicoMarcas });
+    setCurrentStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGeneratePdf = async () => {
+    salvarNoHistoricoLocal({ ...data, historicoMarcas });
+    await gerarPdfResenha({
+      data: { ...data, historicoMarcas },
+      canvasLatEsq: canvasLatEsq.current,
+      canvasLatDir: canvasLatDir.current,
+      canvasFrontal: canvasFrontal.current,
+      canvasChanfro: canvasChanfro.current,
+      bgImages: bgDataUrls,
+    });
+  };
+
+  const handleReset = () => {
+    if (window.confirm('Tem certeza que deseja apagar os dados da ficha atual e recomeçar?')) {
+      // Limpa os canvases
+      [canvasLatEsq, canvasLatDir, canvasFrontal, canvasChanfro].forEach((ref) => {
+        if (ref.current) {
+          const ctx = ref.current.getContext('2d');
+          if (ctx) ctx.clearRect(0, 0, ref.current.width, ref.current.height);
+        }
+      });
+      setData({ ...INITIAL_DATA, dataCriacao: new Date().toISOString() });
+      setHistoricoMarcas([]);
+      setCurrentStep(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleLoadFromHistory = (item: SavedResenha) => {
+    setData(item);
+    setHistoricoMarcas(item.historicoMarcas || []);
+    setCurrentStep(1);
+  };
+
+  const handleDeleteFromHistory = (id: string) => {
+    setSavedResenhas((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FAF8F5] text-[#2C3E50] font-sans selection:bg-[#2E7D32] selection:text-white flex flex-col">
+      {/* Barra de Navegação Superior */}
+      <Navbar
+        onNew={handleReset}
+        onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenGuide={() => setIsGuideOpen(true)}
+        onToggleMenu={() => setIsMenuOpen((prev) => !prev)}
+        isMenuOpen={isMenuOpen}
+      />
+
+      {/* Conteúdo Principal */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Indicador de Passos */}
+        <StepIndicator
+          currentStep={currentStep}
+          onStepClick={handleStepClick}
+        />
+
+        {/* Passo 1: Dados do Proprietário, Resenhador e Animal */}
+        {currentStep === 1 && (
+          <div className="animate-in fade-in duration-200">
+            <Step1Data
+              data={data}
+              onChange={handleFieldChange}
+              onNext={avancarParaEtapa2}
+              onOpenGuide={() => setIsGuideOpen(true)}
+            />
+          </div>
+        )}
+
+        {/* Passo 2: Resenha Gráfica (Canvases Interativos) */}
+        {currentStep === 2 && (
+          <div className="animate-in fade-in duration-200">
+            <Step2Graphics
+              canvasRefs={{
+                latEsq: canvasLatEsq,
+                latDir: canvasLatDir,
+                frontal: canvasFrontal,
+                chanfro: canvasChanfro,
+              }}
+              bgDataUrls={bgDataUrls}
+              historicoMarcas={historicoMarcas}
+              setHistoricoMarcas={setHistoricoMarcas}
+              onNext={avancarParaEtapa3}
+              onBack={() => setCurrentStep(1)}
+            />
+          </div>
+        )}
+
+        {/* Passo 3: Resenha Descritiva Final & Laudo em PDF */}
+        {currentStep === 3 && (
+          <div className="animate-in fade-in duration-200">
+            <Step3Review
+              data={data}
+              onChangeDescricao={(text) => handleFieldChange('animDescricao', text)}
+              onGeneratePdf={handleGeneratePdf}
+              onBack={() => setCurrentStep(2)}
+              onReset={handleReset}
+            />
+          </div>
+        )}
+      </main>
+
+      {/* Rodapé Institucional com Estilo Rural Brasileiro */}
+      <footer className="bg-[#1B5E20] text-white border-t-4 border-[#8B5A2B] mt-12 py-6 px-4">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#C8E6C9]">
+          <div className="flex items-center gap-2 text-center sm:text-left">
+            <span className="text-xl">🐴</span>
+            <div>
+              <p className="font-bold text-white text-sm">Amorimpec • Zootecnia & Resenha Equina</p>
+              <p>Padrão oficial brasileiro para equinos, asininos e muares.</p>
+            </div>
+          </div>
+          <div className="text-center sm:text-right">
+            <p>Em conformidade com as normas zootécnicas e manuais veterinários</p>
+            <p className="text-[#A5D6A7]">Desenho gráfico vetorial e geração de laudo PDF</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modais de Suporte */}
+      <GuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
+
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        savedResenhas={savedResenhas}
+        onLoadResenha={handleLoadFromHistory}
+        onDeleteResenha={handleDeleteFromHistory}
+      />
+    </div>
+  );
+}
