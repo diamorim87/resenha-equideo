@@ -55,6 +55,16 @@ export default function App() {
   const canvasFrontal = useRef<HTMLCanvasElement | null>(null);
   const canvasChanfro = useRef<HTMLCanvasElement | null>(null);
 
+  // Snapshots dos desenhos (PNG data URL), capturados antes dos canvases serem
+  // desmontados ao sair da Etapa 2 — necessários para o PDF, já que as refs viram
+  // null assim que o componente Step2Graphics deixa de ser renderizado.
+  const [desenhosSnapshot, setDesenhosSnapshot] = useState<{
+    latEsq: string | null;
+    latDir: string | null;
+    frontal: string | null;
+    chanfro: string | null;
+  }>({ latEsq: null, latDir: null, frontal: null, chanfro: null });
+
   // Background Data URLs gerados uma vez
   const bgDataUrls = useMemo(() => {
     return {
@@ -103,6 +113,16 @@ export default function App() {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Captura o desenho atual de cada canvas como PNG antes da Etapa 2 ser desmontada
+  const capturarDesenhosAtuais = () => {
+    setDesenhosSnapshot({
+      latEsq: canvasLatEsq.current ? canvasLatEsq.current.toDataURL('image/png') : null,
+      latDir: canvasLatDir.current ? canvasLatDir.current.toDataURL('image/png') : null,
+      frontal: canvasFrontal.current ? canvasFrontal.current.toDataURL('image/png') : null,
+      chanfro: canvasChanfro.current ? canvasChanfro.current.toDataURL('image/png') : null,
+    });
+  };
+
   // Navegação entre passos
   const handleStepClick = (targetStep: number) => {
     if (targetStep > 1 && currentStep === 1) {
@@ -110,6 +130,10 @@ export default function App() {
         alert('Por favor, preencha os campos obrigatórios marcados com * antes de prosseguir.');
         return;
       }
+    }
+
+    if (currentStep === 2 && targetStep !== 2) {
+      capturarDesenhosAtuais();
     }
 
     if (targetStep === 3 && currentStep !== 3) {
@@ -140,6 +164,7 @@ export default function App() {
   };
 
   const avancarParaEtapa3 = () => {
+    capturarDesenhosAtuais();
     prepararResenhaDescritiva();
     salvarNoHistoricoLocal({ ...data, historicoMarcas });
     setCurrentStep(3);
@@ -150,10 +175,7 @@ export default function App() {
     salvarNoHistoricoLocal({ ...data, historicoMarcas });
     await gerarPdfResenha({
       data: { ...data, historicoMarcas },
-      canvasLatEsq: canvasLatEsq.current,
-      canvasLatDir: canvasLatDir.current,
-      canvasFrontal: canvasFrontal.current,
-      canvasChanfro: canvasChanfro.current,
+      desenhos: desenhosSnapshot,
       bgImages: bgDataUrls,
     });
   };
@@ -169,6 +191,7 @@ export default function App() {
       });
       setData({ ...INITIAL_DATA, dataCriacao: new Date().toISOString() });
       setHistoricoMarcas([]);
+      setDesenhosSnapshot({ latEsq: null, latDir: null, frontal: null, chanfro: null });
       setCurrentStep(1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -232,8 +255,12 @@ export default function App() {
               bgDataUrls={bgDataUrls}
               historicoMarcas={historicoMarcas}
               setHistoricoMarcas={setHistoricoMarcas}
+              initialDesenhos={desenhosSnapshot}
               onNext={avancarParaEtapa3}
-              onBack={() => setCurrentStep(1)}
+              onBack={() => {
+                capturarDesenhosAtuais();
+                setCurrentStep(1);
+              }}
             />
           </div>
         )}

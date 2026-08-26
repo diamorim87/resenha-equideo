@@ -88,10 +88,6 @@ export function gerarTextoMarca(
     texto = `Espiga (virada à direita) localizada no(a) ${zona}`;
   } else if (ferramenta === 'carimbo_eesq') {
     texto = `Espiga (virada à esquerda) localizada no(a) ${zona}`;
-  } else if (ferramenta === 'carimbo_estrela') {
-    texto = `Estrela / Luzeiro branco nítido no(a) ${zona}`;
-  } else if (ferramenta === 'carimbo_fogo') {
-    texto = `Marca a fogo / Ferro zootécnico registrado no(a) ${zona}`;
   } else if (ferramenta === 'lapis') {
     if (cor === 'white') {
       if (espessura > 7) {

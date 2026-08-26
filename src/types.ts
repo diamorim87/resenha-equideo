@@ -2,7 +2,7 @@ export type Especie = 'Equina' | 'Asnina' | 'Muar';
 
 export type Sexo = 'Macho Inteiro' | 'Macho Castrado' | 'Fêmea';
 
-export type ToolType = 'lapis' | 'borracha' | 'carimbo_x' | 'carimbo_edir' | 'carimbo_eesq' | 'carimbo_estrela' | 'carimbo_fogo';
+export type ToolType = 'lapis' | 'borracha' | 'carimbo_x' | 'carimbo_edir' | 'carimbo_eesq';
 
 export type CanvasId = 'canvasLatEsq' | 'canvasLatDir' | 'canvasFrontal' | 'canvasChanfro';
 

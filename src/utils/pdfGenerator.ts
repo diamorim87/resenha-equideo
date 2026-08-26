@@ -3,10 +3,12 @@ import { ResenhaData } from '../types';
 
 interface GeneratePdfParams {
   data: ResenhaData;
-  canvasLatEsq: HTMLCanvasElement | null;
-  canvasLatDir: HTMLCanvasElement | null;
-  canvasFrontal: HTMLCanvasElement | null;
-  canvasChanfro: HTMLCanvasElement | null;
+  desenhos: {
+    latEsq: string | null;
+    latDir: string | null;
+    frontal: string | null;
+    chanfro: string | null;
+  };
   bgImages: {
     latEsq: string;
     latDir: string;
@@ -16,10 +18,11 @@ interface GeneratePdfParams {
 }
 
 /**
- * Combina o background SVG com o canvas desenhado em um único Canvas temporário para renderizar sem perder transparência
+ * Combina o background SVG com o desenho do usuário (capturado como PNG antes do canvas
+ * ser desmontado na troca de etapa) em um único Canvas temporário, sem perder transparência
  */
 async function combinarCanvasComFundo(
-  canvasDesenho: HTMLCanvasElement | null,
+  desenhoDataUrl: string | null,
   bgDataUrl: string,
   largura: number,
   altura: number
@@ -47,15 +50,23 @@ async function combinarCanvasComFundo(
   });
 
   // Sobrepõe os traços do usuário
-  if (canvasDesenho) {
-    ctx.drawImage(canvasDesenho, 0, 0, largura, altura);
+  if (desenhoDataUrl) {
+    await new Promise<void>((resolve) => {
+      const imgDesenho = new Image();
+      imgDesenho.onload = () => {
+        ctx.drawImage(imgDesenho, 0, 0, largura, altura);
+        resolve();
+      };
+      imgDesenho.onerror = () => resolve();
+      imgDesenho.src = desenhoDataUrl;
+    });
   }
 
   return offscreen.toDataURL('image/png', 0.95);
 }
 
 export async function gerarPdfResenha(params: GeneratePdfParams): Promise<void> {
-  const { data, canvasLatEsq, canvasLatDir, canvasFrontal, canvasChanfro, bgImages } = params;
+  const { data, desenhos, bgImages } = params;
   
   const pdf = new jsPDF({
     orientation: 'portrait',
@@ -203,10 +214,10 @@ export async function gerarPdfResenha(params: GeneratePdfParams): Promise<void> 
 
   // Renderizar imagens das vistas combinadas
   const [imgLatEsq, imgLatDir, imgFrontal, imgChanfro] = await Promise.all([
-    combinarCanvasComFundo(canvasLatEsq, bgImages.latEsq, 600, 400),
-    combinarCanvasComFundo(canvasLatDir, bgImages.latDir, 600, 400),
-    combinarCanvasComFundo(canvasFrontal, bgImages.frontal, 440, 600),
-    combinarCanvasComFundo(canvasChanfro, bgImages.chanfro, 440, 600),
+    combinarCanvasComFundo(desenhos.latEsq, bgImages.latEsq, 600, 400),
+    combinarCanvasComFundo(desenhos.latDir, bgImages.latDir, 600, 400),
+    combinarCanvasComFundo(desenhos.frontal, bgImages.frontal, 440, 600),
+    combinarCanvasComFundo(desenhos.chanfro, bgImages.chanfro, 440, 600),
   ]);
 
   y += 7.5;
