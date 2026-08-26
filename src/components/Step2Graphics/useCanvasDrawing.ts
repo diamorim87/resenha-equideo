@@ -7,6 +7,7 @@ export interface CanvasRefsMap {
   latDir: RefObject<HTMLCanvasElement | null>;
   frontal: RefObject<HTMLCanvasElement | null>;
   chanfro: RefObject<HTMLCanvasElement | null>;
+  peito: RefObject<HTMLCanvasElement | null>;
 }
 
 interface InitialDesenhosMap {
@@ -14,6 +15,7 @@ interface InitialDesenhosMap {
   latDir: string | null;
   frontal: string | null;
   chanfro: string | null;
+  peito: string | null;
 }
 
 interface UseCanvasDrawingParams {
@@ -184,6 +186,7 @@ export function useCanvasDrawing({
     cleanups.push(setupCanvasInteraction('canvasLatDir', canvasRefs.latDir));
     cleanups.push(setupCanvasInteraction('canvasFrontal', canvasRefs.frontal));
     cleanups.push(setupCanvasInteraction('canvasChanfro', canvasRefs.chanfro));
+    cleanups.push(setupCanvasInteraction('canvasPeito', canvasRefs.peito));
 
     return () => {
       cleanups.forEach((c) => c && c());
@@ -210,6 +213,7 @@ export function useCanvasDrawing({
     restaurar(canvasRefs.latDir, initialDesenhos?.latDir);
     restaurar(canvasRefs.frontal, initialDesenhos?.frontal);
     restaurar(canvasRefs.chanfro, initialDesenhos?.chanfro);
+    restaurar(canvasRefs.peito, initialDesenhos?.peito);
     // Executa apenas na montagem: é uma restauração única, não deve repetir a cada render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

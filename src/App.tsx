@@ -1,12 +1,6 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ResenhaData, SavedResenha } from './types';
-import {
-  SVG_LATERAL_ESQUERDA,
-  SVG_LATERAL_DIREITA,
-  SVG_FRONTAL,
-  SVG_CHANFRO,
-  svgToDataUrl,
-} from './utils/silhouetteSVGs';
+import { SILHUETA_BG_CONFIGS } from './utils/silhouetteAssets';
 import { compilarResenhaDescritiva } from './utils/anatomicalEngine';
 import { gerarPdfResenha } from './utils/pdfGenerator';
 import { Navbar } from './components/Navbar';
@@ -49,11 +43,12 @@ export default function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
   const [savedResenhas, setSavedResenhas] = useState<SavedResenha[]>([]);
 
-  // Referências para os 4 canvases
+  // Referências para os 5 canvases
   const canvasLatEsq = useRef<HTMLCanvasElement | null>(null);
   const canvasLatDir = useRef<HTMLCanvasElement | null>(null);
   const canvasFrontal = useRef<HTMLCanvasElement | null>(null);
   const canvasChanfro = useRef<HTMLCanvasElement | null>(null);
+  const canvasPeito = useRef<HTMLCanvasElement | null>(null);
 
   // Snapshots dos desenhos (PNG data URL), capturados antes dos canvases serem
   // desmontados ao sair da Etapa 2 — necessários para o PDF, já que as refs viram
@@ -63,17 +58,8 @@ export default function App() {
     latDir: string | null;
     frontal: string | null;
     chanfro: string | null;
-  }>({ latEsq: null, latDir: null, frontal: null, chanfro: null });
-
-  // Background Data URLs gerados uma vez
-  const bgDataUrls = useMemo(() => {
-    return {
-      latEsq: svgToDataUrl(SVG_LATERAL_ESQUERDA),
-      latDir: svgToDataUrl(SVG_LATERAL_DIREITA),
-      frontal: svgToDataUrl(SVG_FRONTAL),
-      chanfro: svgToDataUrl(SVG_CHANFRO),
-    };
-  }, []);
+    peito: string | null;
+  }>({ latEsq: null, latDir: null, frontal: null, chanfro: null, peito: null });
 
   // Carrega histórico do localStorage
   useEffect(() => {
@@ -120,6 +106,7 @@ export default function App() {
       latDir: canvasLatDir.current ? canvasLatDir.current.toDataURL('image/png') : null,
       frontal: canvasFrontal.current ? canvasFrontal.current.toDataURL('image/png') : null,
       chanfro: canvasChanfro.current ? canvasChanfro.current.toDataURL('image/png') : null,
+      peito: canvasPeito.current ? canvasPeito.current.toDataURL('image/png') : null,
     });
   };
 
@@ -176,14 +163,14 @@ export default function App() {
     await gerarPdfResenha({
       data: { ...data, historicoMarcas },
       desenhos: desenhosSnapshot,
-      bgImages: bgDataUrls,
+      bgImages: SILHUETA_BG_CONFIGS,
     });
   };
 
   const handleReset = () => {
     if (window.confirm('Tem certeza que deseja apagar os dados da ficha atual e recomeçar?')) {
       // Limpa os canvases
-      [canvasLatEsq, canvasLatDir, canvasFrontal, canvasChanfro].forEach((ref) => {
+      [canvasLatEsq, canvasLatDir, canvasFrontal, canvasChanfro, canvasPeito].forEach((ref) => {
         if (ref.current) {
           const ctx = ref.current.getContext('2d');
           if (ctx) ctx.clearRect(0, 0, ref.current.width, ref.current.height);
@@ -191,7 +178,7 @@ export default function App() {
       });
       setData({ ...INITIAL_DATA, dataCriacao: new Date().toISOString() });
       setHistoricoMarcas([]);
-      setDesenhosSnapshot({ latEsq: null, latDir: null, frontal: null, chanfro: null });
+      setDesenhosSnapshot({ latEsq: null, latDir: null, frontal: null, chanfro: null, peito: null });
       setCurrentStep(1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -251,8 +238,9 @@ export default function App() {
                 latDir: canvasLatDir,
                 frontal: canvasFrontal,
                 chanfro: canvasChanfro,
+                peito: canvasPeito,
               }}
-              bgDataUrls={bgDataUrls}
+              bgConfigs={SILHUETA_BG_CONFIGS}
               historicoMarcas={historicoMarcas}
               setHistoricoMarcas={setHistoricoMarcas}
               initialDesenhos={desenhosSnapshot}

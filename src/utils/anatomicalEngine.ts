@@ -30,6 +30,15 @@ export function mapearZonaZootecnica(
     return 'Queixo / Mento / Barbelo';
   }
 
+  // Vista de Peito, Pescoço e Queixo (visão frontal abaixo da cabeça)
+  if (idCanvas === 'canvasPeito') {
+    if (percentualY < 0.12) return 'Queixo / Ganachas';
+    if (percentualY < 0.22) return 'Garganta (Leque/Gargantilhado)';
+    if (percentualY < 0.60) return 'Tábua do Pescoço (Espada Romana)';
+    if (percentualY < 0.78) return 'Base do Pescoço / Antepeito';
+    return 'Peito / Maçã do Peito';
+  }
+
   // Vistas do Corpo (Lateral Esquerda e Direita)
   if (percentualY > 0.62) {
     // Região dos Membros e Ventre
@@ -106,6 +115,7 @@ export function gerarTextoMarca(
   if (idCanvas === 'canvasLatDir') texto += ' (Vista Lateral Direita)';
   if (idCanvas === 'canvasFrontal') texto += ' (Vista Frontal)';
   if (idCanvas === 'canvasChanfro') texto += ' (Vista Chanfro/Focinho)';
+  if (idCanvas === 'canvasPeito') texto += ' (Vista Peito/Pescoço)';
 
   return texto + '.';
 }

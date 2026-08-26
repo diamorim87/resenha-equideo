@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trash2, Tag } from 'lucide-react';
+import { SilhuetaBgConfig } from '../../types';
 
 export interface CanvasViewConfig {
   domId: string;
@@ -7,7 +8,7 @@ export interface CanvasViewConfig {
   legenda: string;
   clearLabel: string;
   ref: React.RefObject<HTMLCanvasElement | null>;
-  bgSrc: string;
+  bg: SilhuetaBgConfig;
   bgAlt: string;
   width: number;
   height: number;
@@ -23,7 +24,7 @@ export const CanvasView: React.FC<{ config: CanvasViewConfig }> = ({ config }) =
     legenda,
     clearLabel,
     ref,
-    bgSrc,
+    bg,
     bgAlt,
     width,
     height,
@@ -52,11 +53,25 @@ export const CanvasView: React.FC<{ config: CanvasViewConfig }> = ({ config }) =
       <div
         className={`relative w-full ${maxWidthClass} ${aspectClass} rounded-xl overflow-hidden border-2 border-[#D4A373] bg-[#FAF8F5] shadow-inner`}
       >
-        <img
-          src={bgSrc}
-          alt={bgAlt}
-          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-        />
+        {bg.crop ? (
+          <div
+            role="img"
+            aria-label={bgAlt}
+            className="absolute inset-0 pointer-events-none select-none"
+            style={{
+              backgroundImage: `url(${bg.src})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: `100% ${(bg.crop.naturalHeight / bg.crop.height) * 100}%`,
+              backgroundPosition: `50% ${(bg.crop.top / (bg.crop.naturalHeight - bg.crop.height)) * 100}%`,
+            }}
+          />
+        ) : (
+          <img
+            src={bg.src}
+            alt={bgAlt}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+          />
+        )}
         <canvas
           ref={ref}
           id={domId}

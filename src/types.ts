@@ -4,7 +4,22 @@ export type Sexo = 'Macho Inteiro' | 'Macho Castrado' | 'Fêmea';
 
 export type ToolType = 'lapis' | 'borracha' | 'carimbo_x' | 'carimbo_edir' | 'carimbo_eesq';
 
-export type CanvasId = 'canvasLatEsq' | 'canvasLatDir' | 'canvasFrontal' | 'canvasChanfro';
+export type CanvasId = 'canvasLatEsq' | 'canvasLatDir' | 'canvasFrontal' | 'canvasChanfro' | 'canvasPeito';
+
+/**
+ * Configuração de uma imagem de fundo (silhueta). `crop` recorta uma sub-região
+ * vertical em pixels naturais da imagem de origem — usado quando um único
+ * arquivo contém mais de um desenho (ex: cabeça e focinho no mesmo PNG).
+ */
+export interface SilhuetaBgConfig {
+  src: string;
+  crop?: {
+    naturalWidth: number;
+    naturalHeight: number;
+    top: number;
+    height: number;
+  };
+}
 
 export interface ResenhaData {
   id?: string;

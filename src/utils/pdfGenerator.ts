@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { ResenhaData } from '../types';
+import { ResenhaData, SilhuetaBgConfig } from '../types';
 
 interface GeneratePdfParams {
   data: ResenhaData;
@@ -8,22 +8,36 @@ interface GeneratePdfParams {
     latDir: string | null;
     frontal: string | null;
     chanfro: string | null;
+    peito: string | null;
   };
   bgImages: {
-    latEsq: string;
-    latDir: string;
-    frontal: string;
-    chanfro: string;
+    latEsq: SilhuetaBgConfig;
+    latDir: SilhuetaBgConfig;
+    frontal: SilhuetaBgConfig;
+    chanfro: SilhuetaBgConfig;
+    peito: SilhuetaBgConfig;
   };
 }
 
 /**
- * Combina o background SVG com o desenho do usuário (capturado como PNG antes do canvas
- * ser desmontado na troca de etapa) em um único Canvas temporário, sem perder transparência
+ * Calcula o retângulo (letterbox) que encaixa uma imagem de origem dentro de um
+ * destino preservando a proporção — equivalente a `object-fit: contain`.
+ */
+function computeContainRect(srcW: number, srcH: number, destW: number, destH: number) {
+  const scale = Math.min(destW / srcW, destH / srcH);
+  const w = srcW * scale;
+  const h = srcH * scale;
+  return { x: (destW - w) / 2, y: (destH - h) / 2, w, h };
+}
+
+/**
+ * Combina a silhueta de fundo (recortada, se aplicável) com o desenho do usuário
+ * (capturado como PNG antes do canvas ser desmontado na troca de etapa) em um
+ * único Canvas temporário, preservando a proporção original da imagem de fundo
  */
 async function combinarCanvasComFundo(
   desenhoDataUrl: string | null,
-  bgDataUrl: string,
+  bg: SilhuetaBgConfig,
   largura: number,
   altura: number
 ): Promise<string> {
@@ -37,19 +51,29 @@ async function combinarCanvasComFundo(
   ctx.fillStyle = '#FAF8F5';
   ctx.fillRect(0, 0, largura, altura);
 
-  // Carrega a silhueta de fundo
+  // Carrega a silhueta de fundo (recortando a sub-região quando configurado)
   await new Promise<void>((resolve) => {
     const imgBg = new Image();
     imgBg.crossOrigin = 'anonymous';
     imgBg.onload = () => {
-      ctx.drawImage(imgBg, 0, 0, largura, altura);
+      if (bg.crop) {
+        const rect = computeContainRect(bg.crop.naturalWidth, bg.crop.height, largura, altura);
+        ctx.drawImage(
+          imgBg,
+          0, bg.crop.top, bg.crop.naturalWidth, bg.crop.height,
+          rect.x, rect.y, rect.w, rect.h
+        );
+      } else {
+        const rect = computeContainRect(imgBg.naturalWidth, imgBg.naturalHeight, largura, altura);
+        ctx.drawImage(imgBg, rect.x, rect.y, rect.w, rect.h);
+      }
       resolve();
     };
     imgBg.onerror = () => resolve();
-    imgBg.src = bgDataUrl;
+    imgBg.src = bg.src;
   });
 
-  // Sobrepõe os traços do usuário
+  // Sobrepõe os traços do usuário (mesma resolução do canvas original, sem recorte)
   if (desenhoDataUrl) {
     await new Promise<void>((resolve) => {
       const imgDesenho = new Image();
@@ -213,48 +237,64 @@ export async function gerarPdfResenha(params: GeneratePdfParams): Promise<void> 
   pdf.text('2. RESENHA GRÁFICA VETERINÁRIA (VISTAS ANATÔMICAS)', margin + 3, y + 4);
 
   // Renderizar imagens das vistas combinadas
-  const [imgLatEsq, imgLatDir, imgFrontal, imgChanfro] = await Promise.all([
+  const [imgLatEsq, imgLatDir, imgFrontal, imgChanfro, imgPeito] = await Promise.all([
     combinarCanvasComFundo(desenhos.latEsq, bgImages.latEsq, 600, 400),
     combinarCanvasComFundo(desenhos.latDir, bgImages.latDir, 600, 400),
-    combinarCanvasComFundo(desenhos.frontal, bgImages.frontal, 440, 600),
-    combinarCanvasComFundo(desenhos.chanfro, bgImages.chanfro, 440, 600),
+    combinarCanvasComFundo(desenhos.frontal, bgImages.frontal, 139, 450),
+    combinarCanvasComFundo(desenhos.chanfro, bgImages.chanfro, 450, 343),
+    combinarCanvasComFundo(desenhos.peito, bgImages.peito, 114, 450),
   ]);
 
   y += 7.5;
-  const wLateral = 88;
+  // Vistas Laterais (imagens quase quadradas — caixas quadradas centralizadas)
+  const wLateral = 58;
   const hLateral = 58;
   const gapX = 10;
+  const startXLat = margin + (contentWidth - (wLateral * 2 + gapX)) / 2;
 
-  // Lateral Esquerda (Box & Imagem)
   pdf.setDrawColor(...marromTerra);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(margin, y, wLateral, hLateral + 5, 1.5, 1.5, 'S');
-  pdf.addImage(imgLatEsq, 'PNG', margin + 1, y + 1, wLateral - 2, hLateral - 2);
+  pdf.roundedRect(startXLat, y, wLateral, hLateral + 5, 1.5, 1.5, 'S');
+  pdf.addImage(imgLatEsq, 'PNG', startXLat + 1, y + 1, wLateral - 2, hLateral - 2);
   pdf.setFontSize(6.5);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(...marromCouro);
-  pdf.text('VISTA LATERAL ESQUERDA', margin + wLateral / 2, y + hLateral + 3, { align: 'center' });
+  pdf.text('VISTA LATERAL ESQUERDA', startXLat + wLateral / 2, y + hLateral + 3, { align: 'center' });
 
-  // Lateral Direita (Box & Imagem)
-  pdf.roundedRect(margin + wLateral + gapX, y, wLateral, hLateral + 5, 1.5, 1.5, 'S');
-  pdf.addImage(imgLatDir, 'PNG', margin + wLateral + gapX + 1, y + 1, wLateral - 2, hLateral - 2);
-  pdf.text('VISTA LATERAL DIREITA', margin + wLateral + gapX + wLateral / 2, y + hLateral + 3, { align: 'center' });
+  pdf.roundedRect(startXLat + wLateral + gapX, y, wLateral, hLateral + 5, 1.5, 1.5, 'S');
+  pdf.addImage(imgLatDir, 'PNG', startXLat + wLateral + gapX + 1, y + 1, wLateral - 2, hLateral - 2);
+  pdf.text('VISTA LATERAL DIREITA', startXLat + wLateral + gapX + wLateral / 2, y + hLateral + 3, { align: 'center' });
 
-  // Cabeça: Frontal e Chanfro
+  // Cabeça, Chanfro e Peito/Pescoço/Queixo — mesma altura de linha do layout
+  // original (64mm); a largura de cada caixa é derivada da proporção real de
+  // cada imagem para não distorcer (frontal e peito são estreitas/altas,
+  // chanfro é larga/baixa)
   y += hLateral + 8;
-  const wCabeca = 48;
   const hCabeca = 64;
-  const startXHead = margin + (contentWidth - (wCabeca * 2 + 16)) / 2;
+  const wFrontal = 20; // 497/1614 * hCabeca
+  const wChanfro = 84; // 497/379 * hCabeca
+  const wPeito = 16; // 495/1949 * hCabeca
+  const rowGap = 8;
+  const row2Width = wFrontal + rowGap + wChanfro + rowGap + wPeito;
+  const startXRow2 = margin + (contentWidth - row2Width) / 2;
 
-  // Frontal
-  pdf.roundedRect(startXHead, y, wCabeca, hCabeca + 5, 1.5, 1.5, 'S');
-  pdf.addImage(imgFrontal, 'PNG', startXHead + 1, y + 1, wCabeca - 2, hCabeca - 2);
-  pdf.text('VISTA FRONTAL (CABEÇA)', startXHead + wCabeca / 2, y + hCabeca + 3, { align: 'center' });
+  // Frontal (Cabeça)
+  let x2 = startXRow2;
+  pdf.roundedRect(x2, y, wFrontal, hCabeca + 5, 1.5, 1.5, 'S');
+  pdf.addImage(imgFrontal, 'PNG', x2 + 1, y + 1, wFrontal - 2, hCabeca - 2);
+  pdf.text('FRONTAL', x2 + wFrontal / 2, y + hCabeca + 3, { align: 'center' });
 
   // Chanfro / Focinho
-  pdf.roundedRect(startXHead + wCabeca + 16, y, wCabeca, hCabeca + 5, 1.5, 1.5, 'S');
-  pdf.addImage(imgChanfro, 'PNG', startXHead + wCabeca + 17, y + 1, wCabeca - 2, hCabeca - 2);
-  pdf.text('DETALHE CHANFRO / FOCINHO', startXHead + wCabeca + 16 + wCabeca / 2, y + hCabeca + 3, { align: 'center' });
+  x2 += wFrontal + rowGap;
+  pdf.roundedRect(x2, y, wChanfro, hCabeca + 5, 1.5, 1.5, 'S');
+  pdf.addImage(imgChanfro, 'PNG', x2 + 1, y + 1, wChanfro - 2, hCabeca - 2);
+  pdf.text('DETALHE CHANFRO / FOCINHO', x2 + wChanfro / 2, y + hCabeca + 3, { align: 'center' });
+
+  // Peito / Pescoço / Queixo
+  x2 += wChanfro + rowGap;
+  pdf.roundedRect(x2, y, wPeito, hCabeca + 5, 1.5, 1.5, 'S');
+  pdf.addImage(imgPeito, 'PNG', x2 + 1, y + 1, wPeito - 2, hCabeca - 2);
+  pdf.text('PEITO', x2 + wPeito / 2, y + hCabeca + 3, { align: 'center' });
 
   // 4. RESENHA DESCRITIVA
   y += hCabeca + 9;
@@ -272,12 +312,23 @@ export async function gerarPdfResenha(params: GeneratePdfParams): Promise<void> 
   pdf.setLineWidth(0.3);
   pdf.roundedRect(margin, y, contentWidth, boxDescHeight, 1.5, 1.5, 'FD');
 
-  pdf.setFontSize(6.5);
+  const descFontSize = 6.5;
+  pdf.setFontSize(descFontSize);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(40, 40, 40);
   const textoLimpo = (data.animDescricao || 'Sem particularidades registradas.').trim();
   const splitText = pdf.splitTextToSize(textoLimpo, contentWidth - 6);
-  pdf.text(splitText.slice(0, 8), margin + 3, y + 4);
+  // Nº de linhas calculado a partir da altura real da caixa (não mais um limite
+  // fixo arbitrário) — com 5 vistas, é comum a lista de marcas passar de 8 linhas
+  const lineHeightMm = descFontSize * 0.3528 * 1.15;
+  const maxLines = Math.max(1, Math.floor((boxDescHeight - 4) / lineHeightMm));
+  if (splitText.length > maxLines) {
+    const visivel = splitText.slice(0, maxLines - 1);
+    visivel.push(`(+${splitText.length - visivel.length} linha(s) não exibidas aqui — texto completo editável na Etapa 3)`);
+    pdf.text(visivel, margin + 3, y + 4);
+  } else {
+    pdf.text(splitText, margin + 3, y + 4);
+  }
 
   // 5. CAMPOS DE ASSINATURA OFICIAL
   y += boxDescHeight + 6;

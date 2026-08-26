@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ToolType } from '../../types';
+import { ToolType, SilhuetaBgConfig } from '../../types';
 import { ArrowLeft, Wand2 } from 'lucide-react';
 import { useCanvasDrawing, CanvasRefsMap } from './useCanvasDrawing';
 import { Toolbar } from './Toolbar';
@@ -8,11 +8,12 @@ import { MarksPanel } from './MarksPanel';
 
 interface Step2GraphicsProps {
   canvasRefs: CanvasRefsMap;
-  bgDataUrls: {
-    latEsq: string;
-    latDir: string;
-    frontal: string;
-    chanfro: string;
+  bgConfigs: {
+    latEsq: SilhuetaBgConfig;
+    latDir: SilhuetaBgConfig;
+    frontal: SilhuetaBgConfig;
+    chanfro: SilhuetaBgConfig;
+    peito: SilhuetaBgConfig;
   };
   historicoMarcas: string[];
   setHistoricoMarcas: React.Dispatch<React.SetStateAction<string[]>>;
@@ -21,6 +22,7 @@ interface Step2GraphicsProps {
     latDir: string | null;
     frontal: string | null;
     chanfro: string | null;
+    peito: string | null;
   };
   onNext: () => void;
   onBack: () => void;
@@ -28,7 +30,7 @@ interface Step2GraphicsProps {
 
 export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
   canvasRefs,
-  bgDataUrls,
+  bgConfigs,
   historicoMarcas,
   setHistoricoMarcas,
   initialDesenhos,
@@ -65,7 +67,7 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
     setHistoricoMarcas((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const vistas: CanvasViewConfig[] = [
+  const vistasPrincipais: CanvasViewConfig[] = [
     {
       domId: 'canvasLatEsq',
       titulo: 'Vista Lateral Esquerda',
@@ -73,12 +75,12 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
         'Marque calçados nos membros esquerdos, rodopios de pescoço, marcas a fogo na anca',
       clearLabel: 'Limpar',
       ref: canvasRefs.latEsq,
-      bgSrc: bgDataUrls.latEsq,
+      bg: bgConfigs.latEsq,
       bgAlt: 'Silhueta Lateral Esquerda',
       width: 600,
       height: 400,
       maxWidthClass: 'max-w-[420px]',
-      aspectClass: 'aspect-[3/2]',
+      aspectClass: 'aspect-square',
       onClear: () => handleLimparCanvas(canvasRefs.latEsq, 'Vista Lateral Esquerda'),
     },
     {
@@ -88,12 +90,12 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
         'Marque calçados nos membros direitos, espádua, costado e garupa direita',
       clearLabel: 'Limpar',
       ref: canvasRefs.latDir,
-      bgSrc: bgDataUrls.latDir,
+      bg: bgConfigs.latDir,
       bgAlt: 'Silhueta Lateral Direita',
       width: 600,
       height: 400,
       maxWidthClass: 'max-w-[420px]',
-      aspectClass: 'aspect-[3/2]',
+      aspectClass: 'aspect-square',
       onClear: () => handleLimparCanvas(canvasRefs.latDir, 'Vista Lateral Direita'),
     },
     {
@@ -102,12 +104,12 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
       legenda: 'Desenhe estrelas/luzeiros com o lápis branco na fronte e marque rodopios inter-oculares e topete',
       clearLabel: 'Limpar',
       ref: canvasRefs.frontal,
-      bgSrc: bgDataUrls.frontal,
+      bg: bgConfigs.frontal,
       bgAlt: 'Silhueta Frontal Cabeça',
-      width: 440,
-      height: 600,
-      maxWidthClass: 'max-w-[280px]',
-      aspectClass: 'aspect-[11/15]',
+      width: 139,
+      height: 450,
+      maxWidthClass: 'max-w-[200px]',
+      aspectClass: 'aspect-[497/1614]',
       onClear: () => handleLimparCanvas(canvasRefs.frontal, 'Vista Frontal'),
     },
     {
@@ -116,15 +118,30 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
       legenda: 'Marque filetes, cordões, betas e manchas brancas no focinho e lábios',
       clearLabel: 'Limpar',
       ref: canvasRefs.chanfro,
-      bgSrc: bgDataUrls.chanfro,
+      bg: bgConfigs.chanfro,
       bgAlt: 'Silhueta Chanfro e Focinho',
-      width: 440,
-      height: 600,
-      maxWidthClass: 'max-w-[280px]',
-      aspectClass: 'aspect-[11/15]',
+      width: 450,
+      height: 343,
+      maxWidthClass: 'max-w-[320px]',
+      aspectClass: 'aspect-[497/379]',
       onClear: () => handleLimparCanvas(canvasRefs.chanfro, 'Vista Chanfro/Focinho'),
     },
   ];
+
+  const vistaPeito: CanvasViewConfig = {
+    domId: 'canvasPeito',
+    titulo: 'Peito / Pescoço / Queixo',
+    legenda: 'Marque rodopios de garganta (leque/gargantilhado), espada romana na tábua do pescoço e marcas no antepeito',
+    clearLabel: 'Limpar',
+    ref: canvasRefs.peito,
+    bg: bgConfigs.peito,
+    bgAlt: 'Silhueta de Peito, Pescoço e Queixo',
+    width: 114,
+    height: 450,
+    maxWidthClass: 'max-w-[180px]',
+    aspectClass: 'aspect-[495/1949]',
+    onClear: () => handleLimparCanvas(canvasRefs.peito, 'Vista Peito/Pescoço'),
+  };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -143,11 +160,18 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
         onEspessuraChange={setEspessura}
       />
 
-      {/* GRADE DAS 4 VISTAS ANATÔMICAS */}
+      {/* GRADE DAS VISTAS ANATÔMICAS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {vistas.map((vista) => (
+        {vistasPrincipais.map((vista) => (
           <CanvasView key={vista.domId} config={vista} />
         ))}
+      </div>
+
+      {/* VISTA ADICIONAL: PEITO / PESCOÇO / QUEIXO */}
+      <div className="flex justify-center">
+        <div className="w-full max-w-[220px]">
+          <CanvasView config={vistaPeito} />
+        </div>
       </div>
 
       {/* PAINEL DE MARCAS ZOOTÉCNICAS IDENTIFICADAS */}
