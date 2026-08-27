@@ -1,11 +1,36 @@
 import React from 'react';
 import { X, BookOpen, Check, Award, HelpCircle } from 'lucide-react';
 import { GRUPOS_PELAGENS } from '../data/pelagens';
+import { MarcaDiagrama, MarcaCabecaId, MarcaCorpoId } from './MarcaDiagrama';
 
 interface GuideModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const PARTICULARIDADES_CABECA: { id: MarcaCabecaId; nome: string; descricao: string }[] = [
+  { id: 'vestigio-estrela', nome: 'Vestígio de Estrela', descricao: 'Pequena malha de pelos brancos na fronte, sem despigmentação da pele.' },
+  { id: 'estrela', nome: 'Estrela', descricao: 'Marca branca na fronte com despigmentação da pele; varia em forma (coração, meia-lua etc.), tamanho e direção.' },
+  { id: 'luzeiro', nome: 'Luzeiro', descricao: 'Marca branca com pele despigmentada, maior que a estrela, ocupando grande parte da fronte.' },
+  { id: 'filete', nome: 'Filete', descricao: 'Listra fina de pelos brancos na região do chanfro.' },
+  { id: 'cordao', nome: 'Cordão', descricao: 'Lista grossa de pelos brancos no chanfro; se não for prolongamento da estrela, chama-se cordão interrompido.' },
+  { id: 'beta', nome: 'Beta', descricao: 'Pequena mancha branca localizada entre as narinas.' },
+  { id: 'ladre', nome: 'Ladre', descricao: 'Marca branca despigmentada entre as narinas, ligada ao filete ou cordão.' },
+  { id: 'bocalvo', nome: 'Bocalvo', descricao: 'Marca branca despigmentada que recobre as narinas e a boca.' },
+  { id: 'bebe-em-branco', nome: 'Bebe em Branco', descricao: 'Marca branca restrita ao lábio superior e/ou inferior.' },
+  { id: 'frente-aberta', nome: 'Frente Aberta', descricao: 'Cobre a fronte entre os olhos e desce por toda a largura do chanfro até o focinho.' },
+  { id: 'malacara', nome: 'Malacara', descricao: 'Cobre toda a fronte e o chanfro — mais larga que a Frente Aberta — descendo em direção à boca.' },
+];
+
+const PARTICULARIDADES_CORPO: { id: MarcaCorpoId; nome: string; descricao: string }[] = [
+  { id: 'faixa-crucial', nome: 'Faixa Crucial', descricao: 'Faixa escura que vai da cernelha até o início da espádua, representada por um traço.' },
+  { id: 'listra-de-burro', nome: 'Listra de Burro', descricao: 'Listra escura que vai da cernelha até a base da cauda, ao longo do dorso.' },
+  { id: 'cicatriz', nome: 'Cicatriz', descricao: 'Marca permanente de acidente, cirurgia ou ferimento; representada por uma seta apontando o local.' },
+  { id: 'golpe-de-lanca', nome: 'Golpe de Lança', descricao: 'Depressão funda no pescoço, peitorais ou ponta da espádua; indicada por um triângulo.' },
+  { id: 'marca-de-ferro', nome: 'Marca de Ferro (ilegível)', descricao: 'Marca a fogo ilegível é considerada cicatriz permanente e indicada por uma seta.' },
+  { id: 'manchas-brancas', nome: 'Manchas Brancas (Corpo)', descricao: 'O contorno da mancha deve ser desenhado, preferencialmente sem preenchimento.' },
+  { id: 'bragas', nome: 'Bragas / Bragaldo', descricao: 'Malhas despigmentadas encontradas na região abdominal (ventre).' },
+];
 
 export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -89,35 +114,42 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
             <h4 className="font-bold font-serif text-[#5C3D2E] text-base mb-3">
               Particularidades Anatômicas da Cabeça
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-              <div className="p-2.5 rounded-lg bg-[#FAF8F5] border border-[#EDE6DB]">
-                <strong className="text-[#8B5A2B] block">Estrela / Luzeiro:</strong>
-                Mancha branca na fronte (testa).
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#FAF8F5] border border-[#EDE6DB]">
-                <strong className="text-[#8B5A2B] block">Filete:</strong>
-                Linha branca estreita que desce pelo chanfro.
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#FAF8F5] border border-[#EDE6DB]">
-                <strong className="text-[#8B5A2B] block">Cordão / Faixa:</strong>
-                Faixa branca mais larga que ocupa a tábua do chanfro.
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#FAF8F5] border border-[#EDE6DB]">
-                <strong className="text-[#8B5A2B] block">Beta:</strong>
-                Pequena mancha branca entre as narinas.
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#FAF8F5] border border-[#EDE6DB]">
-                <strong className="text-[#8B5A2B] block">Beber em Branco:</strong>
-                Mancha branca no lábio inferior ou superior.
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#FAF8F5] border border-[#EDE6DB]">
-                <strong className="text-[#8B5A2B] block">Frente Aberta:</strong>
-                Mancha branca ampla que cobre fronte, chanfro e olhos.
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              {PARTICULARIDADES_CABECA.map((item) => (
+                <div key={item.id} className="rounded-lg bg-[#FAF8F5] border border-[#EDE6DB] overflow-hidden flex flex-col">
+                  <div className="w-full aspect-[497/1020]">
+                    <MarcaDiagrama tipo="cabeca" id={item.id} className="w-full h-full" />
+                  </div>
+                  <div className="p-2">
+                    <strong className="text-[#8B5A2B] block mb-0.5">{item.nome}</strong>
+                    <p className="text-[#6B7280] leading-snug">{item.descricao}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* 3. Catálogo de Pelagens */}
+          {/* 3. Particularidades do Corpo */}
+          <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
+            <h4 className="font-bold font-serif text-[#5C3D2E] text-base mb-3">
+              Particularidades Anatômicas do Corpo
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              {PARTICULARIDADES_CORPO.map((item) => (
+                <div key={item.id} className="rounded-lg bg-[#FAF8F5] border border-[#EDE6DB] overflow-hidden flex flex-col sm:flex-row">
+                  <div className="w-full sm:w-32 aspect-[999/1003] shrink-0">
+                    <MarcaDiagrama tipo="corpo" id={item.id} className="w-full h-full" />
+                  </div>
+                  <div className="p-2.5">
+                    <strong className="text-[#8B5A2B] block mb-0.5">{item.nome}</strong>
+                    <p className="text-[#6B7280] leading-snug">{item.descricao}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. Catálogo de Pelagens */}
           <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
             <h4 className="font-bold font-serif text-[#1B5E20] text-base mb-3">
               Catálogo Oficial de Pelagens Brasileiras
