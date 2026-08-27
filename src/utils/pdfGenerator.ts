@@ -238,8 +238,8 @@ export async function gerarPdfResenha(params: GeneratePdfParams): Promise<void> 
 
   // Renderizar imagens das vistas combinadas
   const [imgLatEsq, imgLatDir, imgFrontal, imgChanfro, imgPeito] = await Promise.all([
-    combinarCanvasComFundo(desenhos.latEsq, bgImages.latEsq, 600, 400),
-    combinarCanvasComFundo(desenhos.latDir, bgImages.latDir, 600, 400),
+    combinarCanvasComFundo(desenhos.latEsq, bgImages.latEsq, 500, 500),
+    combinarCanvasComFundo(desenhos.latDir, bgImages.latDir, 500, 500),
     combinarCanvasComFundo(desenhos.frontal, bgImages.frontal, 139, 450),
     combinarCanvasComFundo(desenhos.chanfro, bgImages.chanfro, 450, 343),
     combinarCanvasComFundo(desenhos.peito, bgImages.peito, 114, 450),
@@ -296,73 +296,104 @@ export async function gerarPdfResenha(params: GeneratePdfParams): Promise<void> 
   pdf.addImage(imgPeito, 'PNG', x2 + 1, y + 1, wPeito - 2, hCabeca - 2);
   pdf.text('PEITO', x2 + wPeito / 2, y + hCabeca + 3, { align: 'center' });
 
-  // 4. RESENHA DESCRITIVA
-  y += hCabeca + 9;
+  const desenharRodape = () => {
+    pdf.setFillColor(...verdeEscuro);
+    pdf.rect(0, 290, pageWidth, 7, 'F');
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Amorimpec • Sistema Integrado de Resenha e Gestão Zootécnica de Equídeos • Documento Válido para Cadastro e Manejo', pageWidth / 2, 294.5, { align: 'center' });
+  };
+
+  // Nota de continuação — a resenha descritiva agora é texto corrido (conforme
+  // o Manual de Confecção de Resenhas) e pode ser bem mais longa que uma lista
+  // de marcadores, por isso ganha página própria, sem limite fixo de linhas
+  y += hCabeca + 12;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(...marromCouro);
+  pdf.text('A resenha descritiva completa e os campos de assinatura estão na página 2.', pageWidth / 2, y, { align: 'center' });
+  desenharRodape();
+
+  // 4. RESENHA DESCRITIVA (PÁGINA 2 — texto corrido, sem limite fixo de linhas)
+  pdf.addPage();
+  let y2 = 12;
+
+  pdf.setFillColor(...verdeEscuro);
+  pdf.rect(0, 0, pageWidth, 12, 'F');
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(10);
+  pdf.setTextColor(255, 255, 255);
+  pdf.text('AMORIMPEC • RESENHA DESCRITIVA (continuação)', pageWidth / 2, 8, { align: 'center' });
+
+  y2 = 20;
   pdf.setFillColor(...marromCouro);
-  pdf.rect(margin, y, contentWidth, 5.5, 'F');
+  pdf.rect(margin, y2, contentWidth, 5.5, 'F');
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
   pdf.setTextColor(255, 255, 255);
-  pdf.text('3. RESENHA DESCRITIVA E SINAIS PARTICULARES', margin + 3, y + 4);
+  pdf.text('3. RESENHA DESCRITIVA E SINAIS PARTICULARES', margin + 3, y2 + 4);
 
-  y += 6.5;
-  const boxDescHeight = 32;
-  pdf.setFillColor(255, 255, 255);
-  pdf.setDrawColor(...marromCouro);
-  pdf.setLineWidth(0.3);
-  pdf.roundedRect(margin, y, contentWidth, boxDescHeight, 1.5, 1.5, 'FD');
-
-  const descFontSize = 6.5;
+  y2 += 7.5;
+  const descFontSize = 8.5;
   pdf.setFontSize(descFontSize);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(40, 40, 40);
   const textoLimpo = (data.animDescricao || 'Sem particularidades registradas.').trim();
   const splitText = pdf.splitTextToSize(textoLimpo, contentWidth - 6);
-  // Nº de linhas calculado a partir da altura real da caixa (não mais um limite
-  // fixo arbitrário) — com 5 vistas, é comum a lista de marcas passar de 8 linhas
-  const lineHeightMm = descFontSize * 0.3528 * 1.15;
-  const maxLines = Math.max(1, Math.floor((boxDescHeight - 4) / lineHeightMm));
-  if (splitText.length > maxLines) {
-    const visivel = splitText.slice(0, maxLines - 1);
-    visivel.push(`(+${splitText.length - visivel.length} linha(s) não exibidas aqui — texto completo editável na Etapa 3)`);
-    pdf.text(visivel, margin + 3, y + 4);
-  } else {
-    pdf.text(splitText, margin + 3, y + 4);
+
+  // Reserva espaço para assinaturas (34mm) e rodapé antes de decidir quantas
+  // linhas cabem; só trunca (com aviso) no caso extremo de um texto customizado
+  // pelo usuário maior do que a página inteira comporta
+  const wAssinatura = 80;
+  const alturaAssinaturas = 34;
+  const limiteInferior = 284;
+  const alturaMaximaCaixa = limiteInferior - alturaAssinaturas - y2;
+  const lineHeightMm = descFontSize * 0.3528 * 1.2;
+  const maxLinhasQueCabem = Math.max(1, Math.floor((alturaMaximaCaixa - 8) / lineHeightMm));
+
+  let linhasParaExibir = splitText;
+  if (splitText.length > maxLinhasQueCabem) {
+    linhasParaExibir = splitText.slice(0, maxLinhasQueCabem - 1);
+    linhasParaExibir.push(`(+${splitText.length - linhasParaExibir.length} linha(s) não exibidas — texto completo editável na Etapa 3)`);
   }
+  const boxDescHeight = Math.min(alturaMaximaCaixa, linhasParaExibir.length * lineHeightMm + 8);
+
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(...marromCouro);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(margin, y2, contentWidth, boxDescHeight, 1.5, 1.5, 'FD');
+  pdf.setFontSize(descFontSize);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(40, 40, 40);
+  pdf.text(linhasParaExibir, margin + 3, y2 + 5.5);
 
   // 5. CAMPOS DE ASSINATURA OFICIAL
-  y += boxDescHeight + 6;
-  const wAssinatura = 80;
-  
+  y2 += boxDescHeight + 8;
+
   // Assinatura Proprietário
   pdf.setDrawColor(...marromTerra);
   pdf.setLineWidth(0.3);
-  pdf.line(margin + 5, y + 12, margin + 5 + wAssinatura, y + 12);
+  pdf.line(margin + 5, y2 + 12, margin + 5 + wAssinatura, y2 + 12);
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(...cinzaTexto);
-  pdf.text(data.propNome ? data.propNome.toUpperCase() : 'PROPRIETÁRIO / RESPONSÁVEL', margin + 5 + wAssinatura / 2, y + 16, { align: 'center' });
+  pdf.text(data.propNome ? data.propNome.toUpperCase() : 'PROPRIETÁRIO / RESPONSÁVEL', margin + 5 + wAssinatura / 2, y2 + 16, { align: 'center' });
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(6);
-  pdf.text('Assinatura do Proprietário / Detentor', margin + 5 + wAssinatura / 2, y + 19, { align: 'center' });
+  pdf.text('Assinatura do Proprietário / Detentor', margin + 5 + wAssinatura / 2, y2 + 19, { align: 'center' });
 
   // Assinatura Resenhador
   const startXRes = margin + contentWidth - wAssinatura - 5;
-  pdf.line(startXRes, y + 12, startXRes + wAssinatura, y + 12);
+  pdf.line(startXRes, y2 + 12, startXRes + wAssinatura, y2 + 12);
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
-  pdf.text(data.resNome ? data.resNome.toUpperCase() : 'MÉDICO VETERINÁRIO / RESENHADOR', startXRes + wAssinatura / 2, y + 16, { align: 'center' });
+  pdf.text(data.resNome ? data.resNome.toUpperCase() : 'MÉDICO VETERINÁRIO / RESENHADOR', startXRes + wAssinatura / 2, y2 + 16, { align: 'center' });
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(6);
-  pdf.text(data.resRegistro ? `Registro Profissional: ${data.resRegistro}` : 'Assinatura e Carimbo do Responsável Técnico', startXRes + wAssinatura / 2, y + 19, { align: 'center' });
+  pdf.text(data.resRegistro ? `Registro Profissional: ${data.resRegistro}` : 'Assinatura e Carimbo do Responsável Técnico', startXRes + wAssinatura / 2, y2 + 19, { align: 'center' });
 
-  // Rodapé decorativo
-  pdf.setFillColor(...verdeEscuro);
-  pdf.rect(0, 290, pageWidth, 7, 'F');
-  pdf.setFontSize(6);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(255, 255, 255);
-  pdf.text('Amorimpec • Sistema Integrado de Resenha e Gestão Zootécnica de Equídeos • Documento Válido para Cadastro e Manejo', pageWidth / 2, 294.5, { align: 'center' });
+  desenharRodape();
 
   // Salva o PDF
   const nomeSanitizado = (data.animNome || 'Animal').replace(/[^a-zA-Z0-9_-]/g, '_');

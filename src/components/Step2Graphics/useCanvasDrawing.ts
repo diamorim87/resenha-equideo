@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect, RefObject, Dispatch, SetStateAction } from 'react';
-import { ToolType, CanvasId } from '../../types';
+import { ToolType, CanvasId, SilhuetaBgConfig } from '../../types';
 import { gerarTextoMarca } from '../../utils/anatomicalEngine';
+import { calcularMascaraSilhueta, estaDentroDaSilhueta } from '../../utils/silhouetteMask';
 
 export interface CanvasRefsMap {
   latEsq: RefObject<HTMLCanvasElement | null>;
@@ -18,8 +19,17 @@ interface InitialDesenhosMap {
   peito: string | null;
 }
 
+interface BgConfigsMap {
+  latEsq: SilhuetaBgConfig;
+  latDir: SilhuetaBgConfig;
+  frontal: SilhuetaBgConfig;
+  chanfro: SilhuetaBgConfig;
+  peito: SilhuetaBgConfig;
+}
+
 interface UseCanvasDrawingParams {
   canvasRefs: CanvasRefsMap;
+  bgConfigs: BgConfigsMap;
   ferramenta: ToolType;
   cor: string;
   espessura: number;
@@ -30,6 +40,7 @@ interface UseCanvasDrawingParams {
 
 export function useCanvasDrawing({
   canvasRefs,
+  bgConfigs,
   ferramenta,
   cor,
   espessura,
@@ -39,6 +50,34 @@ export function useCanvasDrawing({
 }: UseCanvasDrawingParams) {
   const isDrawing = useRef(false);
   const [ultimaMarca, setUltimaMarca] = useState<string | null>(null);
+  // Máscaras (1 = dentro do desenho do cavalo) calculadas por flood-fill a
+  // partir da imagem de fundo de cada vista — impede marcações fora da silhueta
+  const mascarasRef = useRef<Partial<Record<CanvasId, Uint8Array>>>({});
+
+  // Calcula as máscaras uma única vez, ao montar (mesma lógica de fail-open:
+  // enquanto a máscara de uma vista não estiver pronta, o desenho é liberado)
+  useEffect(() => {
+    let cancelado = false;
+    const tarefas: Array<[CanvasId, RefObject<HTMLCanvasElement | null>, SilhuetaBgConfig]> = [
+      ['canvasLatEsq', canvasRefs.latEsq, bgConfigs.latEsq],
+      ['canvasLatDir', canvasRefs.latDir, bgConfigs.latDir],
+      ['canvasFrontal', canvasRefs.frontal, bgConfigs.frontal],
+      ['canvasChanfro', canvasRefs.chanfro, bgConfigs.chanfro],
+      ['canvasPeito', canvasRefs.peito, bgConfigs.peito],
+    ];
+    tarefas.forEach(([canvasId, ref, bg]) => {
+      const canvas = ref.current;
+      if (!canvas) return;
+      calcularMascaraSilhueta(bg, canvas.width, canvas.height).then((mascara) => {
+        if (!cancelado) mascarasRef.current[canvasId] = mascara;
+      });
+    });
+    return () => {
+      cancelado = true;
+    };
+    // Executa apenas na montagem — os canvases e imagens de fundo são fixos
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setupCanvasInteraction = useCallback(
     (canvasId: CanvasId, ref: RefObject<HTMLCanvasElement | null>) => {
@@ -49,6 +88,13 @@ export function useCanvasDrawing({
 
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+
+      // Se o último ponto do traço em andamento ficou fora da silhueta, o
+      // próximo ponto válido reinicia o traço (evita "pular" por cima do vazio)
+      let ultimoPontoForaDaArea = false;
+
+      const dentroDaSilhueta = (x: number, y: number) =>
+        estaDentroDaSilhueta(mascarasRef.current[canvasId], canvas.width, canvas.height, x, y);
 
       const getPos = (e: MouseEvent | TouchEvent) => {
         const rect = canvas.getBoundingClientRect();
@@ -65,6 +111,12 @@ export function useCanvasDrawing({
       const startDraw = (e: MouseEvent | TouchEvent) => {
         e.preventDefault();
         const pos = getPos(e);
+
+        // Marcações só valem dentro do desenho do cavalo
+        if (!dentroDaSilhueta(pos.x, pos.y)) {
+          isDrawing.current = false;
+          return;
+        }
 
         if (ferramenta.startsWith('carimbo_')) {
           ctx.globalCompositeOperation = 'source-over';
@@ -109,6 +161,7 @@ export function useCanvasDrawing({
         }
 
         isDrawing.current = true;
+        ultimoPontoForaDaArea = false;
         ctx.beginPath();
         ctx.moveTo(pos.x, pos.y);
 
@@ -134,6 +187,13 @@ export function useCanvasDrawing({
         e.preventDefault();
         const pos = getPos(e);
 
+        // Sai da silhueta: não desenha, mas lembra para reiniciar o traço
+        // quando o ponteiro voltar para dentro (evita "pular" por cima do vazio)
+        if (!dentroDaSilhueta(pos.x, pos.y)) {
+          ultimoPontoForaDaArea = true;
+          return;
+        }
+
         ctx.lineWidth = espessura;
         if (ferramenta === 'borracha') {
           ctx.globalCompositeOperation = 'destination-out';
@@ -142,6 +202,13 @@ export function useCanvasDrawing({
         } else {
           ctx.globalCompositeOperation = 'source-over';
           ctx.strokeStyle = cor === 'white' ? '#FFFFFF' : cor;
+        }
+
+        if (ultimoPontoForaDaArea) {
+          ctx.beginPath();
+          ctx.moveTo(pos.x, pos.y);
+          ultimoPontoForaDaArea = false;
+          return;
         }
 
         ctx.lineTo(pos.x, pos.y);

@@ -39,34 +39,42 @@ export function mapearZonaZootecnica(
     return 'Peito / Maçã do Peito';
   }
 
-  // Vistas do Corpo (Lateral Esquerda e Direita)
-  if (percentualY > 0.62) {
-    // Região dos Membros e Ventre
-    if (percentualX < 0.38) {
-      if (percentualY > 0.90) return 'Casco / Coroa do Membro Torácico (Anterior)';
-      if (percentualY > 0.80) return 'Boleto / Quartela do Membro Torácico';
-      if (percentualY > 0.70) return 'Canela do Membro Torácico';
+  // Vistas do Corpo (Lateral Esquerda e Direita) — as duas ilustrações são
+  // espelhadas entre si (cabeça à esquerda numa, à direita na outra), então
+  // normalizamos para um eixo "efetivo" em que valores baixos sempre ficam do
+  // lado da cabeça/peito e valores altos do lado da garupa/cauda, em qualquer
+  // uma das duas vistas
+  const xEfetivo = idCanvas === 'canvasLatDir' ? 1 - percentualX : percentualX;
+
+  // Limiares calibrados por análise de pixels da ilustração: o corpo (tronco)
+  // mantém-se largo até ~78% da altura; abaixo disso já são só os membros
+  if (percentualY > 0.78) {
+    // Região dos Membros
+    if (xEfetivo < 0.38) {
+      if (percentualY > 0.93) return 'Casco / Coroa do Membro Torácico (Anterior)';
+      if (percentualY > 0.88) return 'Boleto / Quartela do Membro Torácico';
+      if (percentualY > 0.83) return 'Canela do Membro Torácico';
       return 'Joelho / Antebraço do Membro Torácico';
     }
-    if (percentualX > 0.62) {
-      if (percentualY > 0.90) return 'Casco / Coroa do Membro Pélvico (Posterior)';
-      if (percentualY > 0.80) return 'Boleto / Quartela do Membro Pélvico';
-      if (percentualY > 0.70) return 'Canela do Membro Pélvico';
+    if (xEfetivo > 0.62) {
+      if (percentualY > 0.93) return 'Casco / Coroa do Membro Pélvico (Posterior)';
+      if (percentualY > 0.88) return 'Boleto / Quartela do Membro Pélvico';
+      if (percentualY > 0.83) return 'Canela do Membro Pélvico';
       return 'Jarrete / Perna do Membro Pélvico';
     }
     return 'Ventre / Flanco Inferior';
   } else {
     // Região Superior do Corpo
-    if (percentualX < 0.35) {
+    if (xEfetivo < 0.35) {
       if (percentualY < 0.22) return 'Nuca / Garganta / Fronte Lateral';
       if (percentualY < 0.45) return 'Tábua do Pescoço';
       return 'Espádua / Ombro / Braço';
     }
-    if (percentualX >= 0.35 && percentualX <= 0.62) {
+    if (xEfetivo >= 0.35 && xEfetivo <= 0.62) {
       if (percentualY < 0.32) return 'Cernelha / Dorso';
       return 'Costado / Costelas / Flanco';
     }
-    if (percentualX > 0.62) {
+    if (xEfetivo > 0.62) {
       if (percentualY < 0.35) return 'Lombo / Garupa';
       if (percentualY < 0.55) return 'Anca / Nádega / Coxa';
       return 'Perna / Jarrete Superior';
@@ -120,19 +128,114 @@ export function gerarTextoMarca(
   return texto + '.';
 }
 
+type CategoriaMarca = 'cabeca' | 'membroTE' | 'membroTD' | 'membroPE' | 'membroPD' | 'corpo';
+
+/**
+ * Classifica uma marca (já formatada por gerarTextoMarca, com o sufixo
+ * "(Vista X)") na categoria zootécnica correspondente, seguindo a ordem de
+ * descrição exigida pelo Manual de Confecção de Resenhas: cabeça, membros
+ * (torácico esquerdo, torácico direito, pélvico esquerdo, pélvico direito)
+ * e restante do corpo.
+ */
+function categorizarMarca(marca: string): CategoriaMarca {
+  if (marca.includes('(Vista Frontal)') || marca.includes('(Vista Chanfro/Focinho)')) {
+    return 'cabeca';
+  }
+  if (marca.includes('(Vista Peito/Pescoço)')) {
+    // O queixo/ganachas é descrito junto da cabeça; garganta, pescoço e peito
+    // entram no "restante do corpo", conforme a divisão em 3 grupos do manual.
+    return marca.includes('Queixo / Ganachas') ? 'cabeca' : 'corpo';
+  }
+  if (marca.includes('(Vista Lateral Esquerda)')) {
+    if (marca.includes('Membro Torácico')) return 'membroTE';
+    if (marca.includes('Membro Pélvico')) return 'membroPE';
+    return 'corpo';
+  }
+  if (marca.includes('(Vista Lateral Direita)')) {
+    if (marca.includes('Membro Torácico')) return 'membroTD';
+    if (marca.includes('Membro Pélvico')) return 'membroPD';
+    return 'corpo';
+  }
+  return 'corpo';
+}
+
+/** Remove o sufixo "(Vista X)." e normaliza para uma cláusula minúscula, fluida */
+function limparClausula(marca: string): string {
+  let s = marca
+    .replace(/\s*\(Vista[^)]*\)\.?\s*$/i, '')
+    .replace(/\(a\)/g, '') // "no(a)" / "do(a)" / "o(a)" -> forma simplificada
+    .trim();
+  if (s) s = s.charAt(0).toLowerCase() + s.slice(1);
+  return s;
+}
+
+/** Nas cláusulas de membro, remove a referência ao membro (já dita no parágrafo) */
+function limparClausulaMembro(clausula: string): string {
+  return clausula
+    .replace(/do Membro Torácico \(Anterior\)/g, '')
+    .replace(/do Membro Pélvico \(Posterior\)/g, '')
+    .replace(/do Membro Torácico/g, '')
+    .replace(/do Membro Pélvico/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Junta cláusulas soltas numa frase corrida ("a; b; e c") */
+function juntarClausulas(clausulas: string[]): string {
+  const validas = clausulas.filter(Boolean);
+  if (validas.length === 0) return '';
+  if (validas.length === 1) return validas[0];
+  return `${validas.slice(0, -1).join('; ')}; e ${validas[validas.length - 1]}`;
+}
+
 export function compilarResenhaDescritiva(marcas: string[]): string {
   if (!marcas || marcas.length === 0) {
-    return 'Sem particularidades ou marcações gráficas assinaladas pelo técnico resenhador na inspeção do animal.\n\nObservações gerais: Animal em conformidade com o padrão zootécnico declarado.';
+    return (
+      'RESENHA DESCRITIVA ZOOTÉCNICA\n\n' +
+      'O animal não apresentou, no momento da inspeção, remoinhos, espigas, marcas brancas, cicatrizes ou outras particularidades gráficas assinaladas pelo técnico resenhador, permanecendo em conformidade com o padrão zootécnico declarado para a pelagem.\n\n' +
+      'Observações adicionais do técnico / Resenhador:\n' +
+      'Animal inspecionado em condições normais de manejo. Resenha conferida e validada.'
+    );
   }
 
-  let texto = 'RESENHA DESCRITIVA ZOOTÉCNICA:\n\n';
-  texto += 'Baseado nas marcações gráficas e inspeção zootécnica, o animal apresenta as seguintes particularidades anatômicas:\n\n';
-  
+  const grupos: Record<CategoriaMarca, string[]> = {
+    cabeca: [], membroTE: [], membroTD: [], membroPE: [], membroPD: [], corpo: [],
+  };
   marcas.forEach((marca) => {
-    texto += `• ${marca}\n`;
+    grupos[categorizarMarca(marca)].push(limparClausula(marca));
   });
 
-  texto += '\nObservações adicionais do técnico / Resenhador:\n';
+  let texto = 'RESENHA DESCRITIVA ZOOTÉCNICA\n\n';
+
+  // 1. Cabeça — descrita sempre em primeiro lugar
+  texto += grupos.cabeca.length > 0
+    ? `Na cabeça, o animal apresenta ${juntarClausulas(grupos.cabeca)}.`
+    : 'Na cabeça, não foram identificados remoinhos, espigas ou marcas particulares além do padrão da pelagem.';
+  texto += '\n\n';
+
+  // 2. Membros — sempre citados na ordem torácico esquerdo, torácico direito,
+  // pélvico esquerdo e pélvico direito, mesmo quando não há particularidades
+  const descreverMembro = (lista: string[], nome: string) => {
+    const clausulas = lista.map(limparClausulaMembro);
+    return clausulas.length > 0
+      ? `no ${nome}, ${juntarClausulas(clausulas)}`
+      : `no ${nome}, sem particularidades`;
+  };
+
+  texto += 'Quanto aos membros: ' +
+    `${descreverMembro(grupos.membroTE, 'membro torácico esquerdo')}; ` +
+    `${descreverMembro(grupos.membroTD, 'membro torácico direito')}; ` +
+    `${descreverMembro(grupos.membroPE, 'membro pélvico esquerdo')}; e ` +
+    `${descreverMembro(grupos.membroPD, 'membro pélvico direito')}.`;
+  texto += '\n\n';
+
+  // 3. Restante do corpo (pescoço, garganta, tronco, garupa, cicatrizes, etc.)
+  texto += grupos.corpo.length > 0
+    ? `No restante do corpo, o animal apresenta ${juntarClausulas(grupos.corpo)}.`
+    : 'Sem cicatrizes, marcas de ferro ou outras particularidades no restante do corpo.';
+  texto += '\n\n';
+
+  texto += 'Observações adicionais do técnico / Resenhador:\n';
   texto += 'Animal inspecionado em condições normais de manejo. Resenha conferida e validada.';
 
   return texto;

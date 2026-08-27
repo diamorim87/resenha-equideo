@@ -45,6 +45,9 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
               <Award className="w-4 h-4 text-[#8B5A2B]" />
               Símbolos e Convenções Gráficas Oficiais
             </h4>
+            <p className="text-xs text-[#6B7280] mb-3 italic">
+              As marcações só são registradas dentro do contorno do cavalo em cada silhueta — cliques fora do desenho (na área em branco ao redor) não geram anotação.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE6DB]">
                 <span className="font-bold text-[#1B5E20] block text-sm mb-1">

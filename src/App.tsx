@@ -38,6 +38,10 @@ export default function App() {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [data, setData] = useState<ResenhaData>(INITIAL_DATA);
   const [historicoMarcas, setHistoricoMarcas] = useState<string[]>([]);
+  // true assim que o resenhador digitar qualquer coisa no campo de texto da
+  // Etapa 3 — a partir daí a regeneração automática do texto (ao adicionar
+  // novas marcas e voltar à Etapa 3) NUNCA mais sobrescreve o que foi editado
+  const [descricaoEditadaManualmente, setDescricaoEditadaManualmente] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
@@ -99,6 +103,13 @@ export default function App() {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Handler dedicado ao textarea da resenha descritiva: marca a descrição como
+  // editada manualmente, para nunca mais ser sobrescrita pela regeneração automática
+  const handleChangeDescricao = (text: string) => {
+    setDescricaoEditadaManualmente(true);
+    handleFieldChange('animDescricao', text);
+  };
+
   // Captura o desenho atual de cada canvas como PNG antes da Etapa 2 ser desmontada
   const capturarDesenhosAtuais = () => {
     setDesenhosSnapshot({
@@ -138,16 +149,11 @@ export default function App() {
   };
 
   const prepararResenhaDescritiva = () => {
+    // Só (re)gera o texto automaticamente enquanto o resenhador não tiver
+    // editado nada manualmente — depois disso, a edição dele é definitiva
+    if (descricaoEditadaManualmente) return;
     const textoCompilado = compilarResenhaDescritiva(historicoMarcas);
-    // Se o usuário ainda não tiver customizado o texto ou se estiver padrão, substitui
-    if (
-      !data.animDescricao ||
-      data.animDescricao.includes('RESENHA DESCRITIVA') ||
-      data.animDescricao.includes('particularidades anatômicas') ||
-      data.animDescricao.includes('Sem particularidades')
-    ) {
-      setData((prev) => ({ ...prev, animDescricao: textoCompilado }));
-    }
+    setData((prev) => ({ ...prev, animDescricao: textoCompilado }));
   };
 
   const avancarParaEtapa3 = () => {
@@ -179,6 +185,7 @@ export default function App() {
       setData({ ...INITIAL_DATA, dataCriacao: new Date().toISOString() });
       setHistoricoMarcas([]);
       setDesenhosSnapshot({ latEsq: null, latDir: null, frontal: null, chanfro: null, peito: null });
+      setDescricaoEditadaManualmente(false);
       setCurrentStep(1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -187,6 +194,9 @@ export default function App() {
   const handleLoadFromHistory = (item: SavedResenha) => {
     setData(item);
     setHistoricoMarcas(item.historicoMarcas || []);
+    // Uma ficha carregada já tem uma descrição própria (gerada ou editada) —
+    // trata como "manual" para não ser sobrescrita ao passar pela Etapa 3 de novo
+    setDescricaoEditadaManualmente(true);
     setCurrentStep(1);
   };
 
@@ -258,7 +268,7 @@ export default function App() {
           <div className="animate-in fade-in duration-200">
             <Step3Review
               data={data}
-              onChangeDescricao={(text) => handleFieldChange('animDescricao', text)}
+              onChangeDescricao={handleChangeDescricao}
               onGeneratePdf={handleGeneratePdf}
               onBack={() => setCurrentStep(2)}
               onReset={handleReset}
