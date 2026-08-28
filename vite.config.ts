@@ -11,6 +11,10 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        // Registro do SW é feito manualmente em main.tsx (para checar
+        // atualizações periodicamente e ao voltar o foco), em vez do script
+        // auto-injetado padrão
+        injectRegister: false,
         includeAssets: ['apple-touch-icon.png'],
         manifest: {
           name: 'Amorimpec • Resenha Equina',
