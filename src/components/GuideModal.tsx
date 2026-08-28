@@ -2,6 +2,27 @@ import React from 'react';
 import { X, BookOpen, Check, Award, HelpCircle } from 'lucide-react';
 import { GRUPOS_PELAGENS } from '../data/pelagens';
 import { MarcaDiagrama, MarcaCabecaId, MarcaCorpoId } from './MarcaDiagrama';
+import fotoCremelo from '../assets/manual/cremelo.jpg';
+import fotoPreta from '../assets/manual/preta.jpg';
+import fotoAlaza from '../assets/manual/alaza.jpg';
+import fotoCastanha from '../assets/manual/castanha.jpg';
+import fotoBaia from '../assets/manual/baia.jpg';
+import fotoTordilho from '../assets/manual/tordilho.jpg';
+import fotoPeloDeRato from '../assets/manual/pelo-de-rato.jpg';
+import fotoApaloosa from '../assets/manual/apaloosa.jpg';
+
+// Uma foto de referência por grupo de pelagem (as 34 variações específicas
+// dentro de cada grupo ainda não têm foto própria — fica para uma próxima leva)
+const FOTO_POR_GRUPO: Record<string, string> = {
+  'Cremelo e Branco': fotoCremelo,
+  'Preta': fotoPreta,
+  'Alazã': fotoAlaza,
+  'Castanha': fotoCastanha,
+  'Baia': fotoBaia,
+  'Tordilha': fotoTordilho,
+  'Asininos e Muares Exclusivos': fotoPeloDeRato,
+  'Pelagens Conjugadas e Compostas': fotoApaloosa,
+};
 
 interface GuideModalProps {
   isOpen: boolean;
@@ -154,24 +175,39 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
             <h4 className="font-bold font-serif text-[#1B5E20] text-base mb-3">
               Catálogo Oficial de Pelagens Brasileiras
             </h4>
+            <p className="text-xs text-[#6B7280] mb-3 italic">
+              Foto de referência por grupo — as variações específicas dentro de cada grupo ainda não têm foto própria.
+            </p>
             <div className="space-y-3">
-              {GRUPOS_PELAGENS.map((grp) => (
-                <div key={grp.grupo} className="border-b border-[#EDE6DB] pb-2 last:border-b-0">
-                  <span className="font-bold text-xs uppercase tracking-wider text-[#8B5A2B] block mb-1">
-                    {grp.grupo}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {grp.opcoes.map((op) => (
-                      <span
-                        key={op.valor}
-                        className="inline-block text-[11px] px-2 py-0.5 rounded-md bg-[#FAF8F5] border border-[#EDE6DB] text-[#2C3E50]"
-                      >
-                        {op.nome}
+              {GRUPOS_PELAGENS.map((grp) => {
+                const foto = FOTO_POR_GRUPO[grp.grupo];
+                return (
+                  <div key={grp.grupo} className="border-b border-[#EDE6DB] pb-3 last:border-b-0 flex gap-3">
+                    {foto && (
+                      <img
+                        src={foto}
+                        alt={`Exemplo de pelagem ${grp.grupo}`}
+                        className="w-20 h-20 object-cover rounded-lg border border-[#D4A373] shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <span className="font-bold text-xs uppercase tracking-wider text-[#8B5A2B] block mb-1">
+                        {grp.grupo}
                       </span>
-                    ))}
+                      <div className="flex flex-wrap gap-1.5">
+                        {grp.opcoes.map((op) => (
+                          <span
+                            key={op.valor}
+                            className="inline-block text-[11px] px-2 py-0.5 rounded-md bg-[#FAF8F5] border border-[#EDE6DB] text-[#2C3E50]"
+                          >
+                            {op.nome}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
