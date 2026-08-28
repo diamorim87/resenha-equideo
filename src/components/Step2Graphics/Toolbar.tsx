@@ -6,22 +6,26 @@ interface ToolbarProps {
   ferramenta: ToolType;
   cor: string;
   espessura: number;
+  anguloEspiga: number;
   ultimaMarca: string | null;
   onSelectLapis: (cor: string) => void;
   onSelectBorracha: () => void;
   onSelectCarimbo: (tool: ToolType) => void;
   onEspessuraChange: (value: number) => void;
+  onAnguloEspigaChange: (angulo: number) => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   ferramenta,
   cor,
   espessura,
+  anguloEspiga,
   ultimaMarca,
   onSelectLapis,
   onSelectBorracha,
   onSelectCarimbo,
   onEspessuraChange,
+  onAnguloEspigaChange,
 }) => {
   return (
     <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border-2 border-[#8B5A2B]/40 sticky top-20 z-30">
@@ -131,31 +135,42 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
           <button
             type="button"
-            id="tool-carimbo-edir"
-            onClick={() => onSelectCarimbo('carimbo_edir')}
-            title="Espiga virada à Direita"
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-              ferramenta === 'carimbo_edir'
+            id="tool-carimbo-espiga"
+            onClick={() => onSelectCarimbo('carimbo_espiga')}
+            title="Espiga (gire a seta abaixo para a direção correta)"
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
+              ferramenta === 'carimbo_espiga'
                 ? 'bg-[#1B5E20] text-white border-[#1B5E20] shadow-md scale-105'
                 : 'bg-[#FAF8F5] text-[#1B5E20] border-[#C8E6C9] hover:bg-[#E8F5E9]'
             }`}
           >
-            → E (Espiga Dir)
+            <span
+              className="inline-block font-mono"
+              style={{ transform: `rotate(${anguloEspiga}deg)`, display: 'inline-block' }}
+            >
+              → E
+            </span>
+            (Espiga)
           </button>
 
-          <button
-            type="button"
-            id="tool-carimbo-eesq"
-            onClick={() => onSelectCarimbo('carimbo_eesq')}
-            title="Espiga virada à Esquerda"
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-              ferramenta === 'carimbo_eesq'
-                ? 'bg-[#1B5E20] text-white border-[#1B5E20] shadow-md scale-105'
-                : 'bg-[#FAF8F5] text-[#1B5E20] border-[#C8E6C9] hover:bg-[#E8F5E9]'
-            }`}
-          >
-            E ← (Espiga Esq)
-          </button>
+          {ferramenta === 'carimbo_espiga' && (
+            <div className="flex items-center gap-2 bg-[#E8F5E9] px-3 py-1.5 rounded-xl border border-[#C8E6C9]">
+              <span className="text-xs font-bold text-[#1B5E20]">Direção:</span>
+              <input
+                type="range"
+                id="anguloEspiga"
+                min="0"
+                max="359"
+                value={anguloEspiga}
+                onChange={(e) => onAnguloEspigaChange(Number(e.target.value))}
+                className="w-24 accent-[#1B5E20] cursor-pointer"
+                aria-label="Ângulo de rotação da espiga"
+              />
+              <span className="text-xs font-mono font-bold text-[#1B5E20] w-9 text-center">
+                {anguloEspiga}°
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Controle de Espessura */}

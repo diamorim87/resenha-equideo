@@ -105,10 +105,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
               </div>
               <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE6DB]">
                 <span className="font-bold text-[#1B5E20] block text-sm mb-1">
-                  → E ou E ← — Espiga
+                  → E — Espiga
                 </span>
                 <p className="text-[#6B7280]">
-                  Linha de encontro de duas correntes de pelos em sentidos opostos. A ponta da seta indica o sentido da convergência.
+                  Linha de encontro de duas correntes de pelos em sentidos opostos. Gire a seta (controle de "Direção" ao lado do carimbo) até apontar para o sentido real da convergência observado na pelagem.
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE6DB]">

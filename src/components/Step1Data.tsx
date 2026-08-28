@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResenhaData } from '../types';
+import { ResenhaData, Especie } from '../types';
 import { GRUPOS_PELAGENS } from '../data/pelagens';
 import { ESTADOS_BRASIL } from '../data/estados';
 import {
@@ -32,6 +32,23 @@ export const Step1Data: React.FC<Step1DataProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onNext();
+  };
+
+  // Só mostra os grupos de pelagem compatíveis com a espécie selecionada
+  // (ex: "Pelo de Rato" e "Ruão" são exclusivos de asininos/muares)
+  const gruposPelagensDisponiveis = GRUPOS_PELAGENS.filter(
+    (grp) => !grp.especies || grp.especies.includes(data.animEspecie)
+  );
+
+  const handleEspecieChange = (novaEspecie: Especie) => {
+    onChange('animEspecie', novaEspecie);
+    // Se a pelagem já escolhida não existir mais para a nova espécie, limpa
+    const grupoDaPelagemAtual = GRUPOS_PELAGENS.find((grp) =>
+      grp.opcoes.some((op) => op.valor === data.animCor)
+    );
+    if (grupoDaPelagemAtual?.especies && !grupoDaPelagemAtual.especies.includes(novaEspecie)) {
+      onChange('animCor', '');
+    }
   };
 
   // Formatador de telefone brasileiro: (99) 99999-9999
@@ -278,7 +295,7 @@ export const Step1Data: React.FC<Step1DataProps> = ({
               id="animEspecie"
               required
               value={data.animEspecie}
-              onChange={(e) => onChange('animEspecie', e.target.value as any)}
+              onChange={(e) => handleEspecieChange(e.target.value as Especie)}
               className="w-full px-4 py-2.5 rounded-xl border border-[#D1D5DB] bg-[#FAF8F5] focus:bg-white focus:border-[#1B5E20] focus:ring-2 focus:ring-[#1B5E20]/20 text-[#1F2937] text-sm font-medium transition-all"
             >
               <option value="Equina">🐴 Equina (Cavalo / Égua)</option>
@@ -317,7 +334,7 @@ export const Step1Data: React.FC<Step1DataProps> = ({
               className="w-full px-4 py-2.5 rounded-xl border border-[#D1D5DB] bg-[#FAF8F5] focus:bg-white focus:border-[#1B5E20] focus:ring-2 focus:ring-[#1B5E20]/20 text-[#1F2937] text-sm font-medium transition-all font-sans"
             >
               <option value="">Selecione a Pelagem Oficial...</option>
-              {GRUPOS_PELAGENS.map((grp) => (
+              {gruposPelagensDisponiveis.map((grp) => (
                 <optgroup key={grp.grupo} label={grp.grupo} className="font-bold text-[#1B5E20]">
                   {grp.opcoes.map((pel) => (
                     <option key={pel.valor} value={pel.valor} className="font-normal text-[#1F2937]">

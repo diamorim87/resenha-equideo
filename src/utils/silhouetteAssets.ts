@@ -34,5 +34,8 @@ export const SILHUETA_BG_CONFIGS: Record<'latEsq' | 'latDir' | 'frontal' | 'chan
       height: CABECA_TESTA_FOCINHO_NATURAL.height - CABECA_SPLIT_Y,
     },
   },
-  peito: { src: peitoPescocoQueixoUrl },
+  // Ilustração-guia com traços soltos (as duas "abas" do queixo/ganachas não
+  // fecham contorno entre si) — usa máscara por linha em vez de flood-fill,
+  // senão a região central do pescoço fica bloqueada por engano
+  peito: { src: peitoPescocoQueixoUrl, mascaraSimples: true },
 };

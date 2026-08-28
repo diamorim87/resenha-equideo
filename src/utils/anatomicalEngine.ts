@@ -83,6 +83,23 @@ export function mapearZonaZootecnica(
   }
 }
 
+/** Converte o ângulo de rotação do carimbo de espiga (0°=direita, sentido horário) numa descrição em português */
+export function descreverDirecaoEspiga(anguloGraus: number): string {
+  const normalizado = ((anguloGraus % 360) + 360) % 360;
+  const indice = Math.round(normalizado / 45) % 8;
+  const direcoes = [
+    'para a direita',
+    'na diagonal inferior direita',
+    'para baixo',
+    'na diagonal inferior esquerda',
+    'para a esquerda',
+    'na diagonal superior esquerda',
+    'para cima',
+    'na diagonal superior direita',
+  ];
+  return direcoes[indice];
+}
+
 export function gerarTextoMarca(
   idCanvas: CanvasId,
   x: number,
@@ -91,7 +108,8 @@ export function gerarTextoMarca(
   altura: number,
   ferramenta: ToolType,
   cor: string,
-  espessura: number
+  espessura: number,
+  anguloEspiga: number = 0
 ): string | null {
   if (ferramenta === 'borracha') return null;
 
@@ -101,10 +119,8 @@ export function gerarTextoMarca(
 
   if (ferramenta === 'carimbo_x') {
     texto = `Rodopio de pelos identificado na região do(a) ${zona}`;
-  } else if (ferramenta === 'carimbo_edir') {
-    texto = `Espiga (virada à direita) localizada no(a) ${zona}`;
-  } else if (ferramenta === 'carimbo_eesq') {
-    texto = `Espiga (virada à esquerda) localizada no(a) ${zona}`;
+  } else if (ferramenta === 'carimbo_espiga') {
+    texto = `Espiga (virada ${descreverDirecaoEspiga(anguloEspiga)}) localizada no(a) ${zona}`;
   } else if (ferramenta === 'lapis') {
     if (cor === 'white') {
       if (espessura > 7) {

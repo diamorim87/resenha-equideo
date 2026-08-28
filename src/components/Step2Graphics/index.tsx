@@ -40,6 +40,7 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
   const [ferramenta, setFerramenta] = useState<ToolType>('lapis');
   const [cor, setCor] = useState<string>('black');
   const [espessura, setEspessura] = useState<number>(4);
+  const [anguloEspiga, setAnguloEspiga] = useState<number>(0);
 
   const { ultimaMarca } = useCanvasDrawing({
     canvasRefs,
@@ -47,6 +48,7 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
     ferramenta,
     cor,
     espessura,
+    anguloEspiga,
     historicoMarcas,
     setHistoricoMarcas,
     initialDesenhos,
@@ -151,6 +153,7 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
         ferramenta={ferramenta}
         cor={cor}
         espessura={espessura}
+        anguloEspiga={anguloEspiga}
         ultimaMarca={ultimaMarca}
         onSelectLapis={(novaCor) => {
           setFerramenta('lapis');
@@ -159,6 +162,7 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
         onSelectBorracha={() => setFerramenta('borracha')}
         onSelectCarimbo={(tool) => setFerramenta(tool)}
         onEspessuraChange={setEspessura}
+        onAnguloEspigaChange={setAnguloEspiga}
       />
 
       {/* GRADE DAS VISTAS ANATÔMICAS */}

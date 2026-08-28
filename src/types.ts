@@ -2,7 +2,7 @@ export type Especie = 'Equina' | 'Asnina' | 'Muar';
 
 export type Sexo = 'Macho Inteiro' | 'Macho Castrado' | 'Fêmea';
 
-export type ToolType = 'lapis' | 'borracha' | 'carimbo_x' | 'carimbo_edir' | 'carimbo_eesq';
+export type ToolType = 'lapis' | 'borracha' | 'carimbo_x' | 'carimbo_espiga';
 
 export type CanvasId = 'canvasLatEsq' | 'canvasLatDir' | 'canvasFrontal' | 'canvasChanfro' | 'canvasPeito';
 
@@ -19,6 +19,8 @@ export interface SilhuetaBgConfig {
     top: number;
     height: number;
   };
+  /** Usa máscara "caixa por linha" (sem exigir contorno fechado) — ver silhouetteMask.ts */
+  mascaraSimples?: boolean;
 }
 
 export interface ResenhaData {

@@ -1,6 +1,11 @@
+import { Especie } from '../types';
+
 export interface PelagemGroup {
   grupo: string;
   opcoes: { valor: string; nome: string; descricao?: string }[];
+  /** Se ausente, o grupo vale para qualquer espécie. Se presente, só aparece
+   * no seletor quando a espécie do animal estiver nesta lista. */
+  especies?: Especie[];
 }
 
 export const GRUPOS_PELAGENS: PelagemGroup[] = [
@@ -63,6 +68,7 @@ export const GRUPOS_PELAGENS: PelagemGroup[] = [
   },
   {
     grupo: 'Asininos e Muares Exclusivos',
+    especies: ['Asnina', 'Muar'],
     opcoes: [
       { valor: 'Pelo de Rato', nome: 'Pelo de Rato (Típico asinino/muar)' },
       { valor: 'Ruão', nome: 'Ruão (Mistura de pelos vermelhos, brancos e pretos)' },

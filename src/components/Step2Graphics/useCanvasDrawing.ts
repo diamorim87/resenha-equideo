@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect, RefObject, Dispatch, SetStateAction } from 'react';
 import { ToolType, CanvasId, SilhuetaBgConfig } from '../../types';
 import { gerarTextoMarca } from '../../utils/anatomicalEngine';
-import { calcularMascaraSilhueta, estaDentroDaSilhueta } from '../../utils/silhouetteMask';
+import { calcularMascaraSilhueta, estaDentroDaSilhueta, MascaraSilhueta } from '../../utils/silhouetteMask';
 
 export interface CanvasRefsMap {
   latEsq: RefObject<HTMLCanvasElement | null>;
@@ -33,6 +33,8 @@ interface UseCanvasDrawingParams {
   ferramenta: ToolType;
   cor: string;
   espessura: number;
+  /** Ângulo (graus, 0°=direita, sentido horário) do carimbo de espiga */
+  anguloEspiga: number;
   historicoMarcas: string[];
   setHistoricoMarcas: Dispatch<SetStateAction<string[]>>;
   initialDesenhos?: InitialDesenhosMap;
@@ -44,6 +46,7 @@ export function useCanvasDrawing({
   ferramenta,
   cor,
   espessura,
+  anguloEspiga,
   historicoMarcas,
   setHistoricoMarcas,
   initialDesenhos,
@@ -52,30 +55,29 @@ export function useCanvasDrawing({
   const [ultimaMarca, setUltimaMarca] = useState<string | null>(null);
   // Máscaras (1 = dentro do desenho do cavalo) calculadas por flood-fill a
   // partir da imagem de fundo de cada vista — impede marcações fora da silhueta
-  const mascarasRef = useRef<Partial<Record<CanvasId, Uint8Array>>>({});
+  const mascarasRef = useRef<Partial<Record<CanvasId, MascaraSilhueta>>>({});
 
   // Calcula as máscaras uma única vez, ao montar (mesma lógica de fail-open:
-  // enquanto a máscara de uma vista não estiver pronta, o desenho é liberado)
+  // enquanto a máscara de uma vista não estiver pronta, o desenho é liberado).
+  // Roda na resolução natural da imagem, não na do canvas — ver silhouetteMask.ts
   useEffect(() => {
     let cancelado = false;
-    const tarefas: Array<[CanvasId, RefObject<HTMLCanvasElement | null>, SilhuetaBgConfig]> = [
-      ['canvasLatEsq', canvasRefs.latEsq, bgConfigs.latEsq],
-      ['canvasLatDir', canvasRefs.latDir, bgConfigs.latDir],
-      ['canvasFrontal', canvasRefs.frontal, bgConfigs.frontal],
-      ['canvasChanfro', canvasRefs.chanfro, bgConfigs.chanfro],
-      ['canvasPeito', canvasRefs.peito, bgConfigs.peito],
+    const tarefas: Array<[CanvasId, SilhuetaBgConfig]> = [
+      ['canvasLatEsq', bgConfigs.latEsq],
+      ['canvasLatDir', bgConfigs.latDir],
+      ['canvasFrontal', bgConfigs.frontal],
+      ['canvasChanfro', bgConfigs.chanfro],
+      ['canvasPeito', bgConfigs.peito],
     ];
-    tarefas.forEach(([canvasId, ref, bg]) => {
-      const canvas = ref.current;
-      if (!canvas) return;
-      calcularMascaraSilhueta(bg, canvas.width, canvas.height).then((mascara) => {
+    tarefas.forEach(([canvasId, bg]) => {
+      calcularMascaraSilhueta(bg).then((mascara) => {
         if (!cancelado) mascarasRef.current[canvasId] = mascara;
       });
     });
     return () => {
       cancelado = true;
     };
-    // Executa apenas na montagem — os canvases e imagens de fundo são fixos
+    // Executa apenas na montagem — as imagens de fundo são fixas
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -126,10 +128,17 @@ export function useCanvasDrawing({
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          let symbol = 'X';
-          if (ferramenta === 'carimbo_x') symbol = 'X';
-          if (ferramenta === 'carimbo_edir') symbol = '→ E';
-          if (ferramenta === 'carimbo_eesq') symbol = 'E ←';
+          const symbol = ferramenta === 'carimbo_x' ? 'X' : '→ E';
+
+          // A espiga gira em torno do ponto clicado para apontar na direção
+          // real observada na pelagem; o rodopio (X) é simétrico, não gira
+          const rotacionar = ferramenta === 'carimbo_espiga' && anguloEspiga !== 0;
+          if (rotacionar) {
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate((anguloEspiga * Math.PI) / 180);
+            ctx.translate(-pos.x, -pos.y);
+          }
 
           // Desenho com sombra sutil para contraste se for branco
           if (cor === 'white') {
@@ -140,6 +149,10 @@ export function useCanvasDrawing({
 
           ctx.fillText(symbol, pos.x, pos.y);
 
+          if (rotacionar) {
+            ctx.restore();
+          }
+
           // Registra no motor zootécnico
           const texto = gerarTextoMarca(
             canvasId,
@@ -149,7 +162,8 @@ export function useCanvasDrawing({
             canvas.height,
             ferramenta,
             cor,
-            espessura
+            espessura,
+            anguloEspiga
           );
 
           if (texto && !historicoMarcas.includes(texto)) {
@@ -244,7 +258,7 @@ export function useCanvasDrawing({
         canvas.removeEventListener('touchcancel', stopDraw);
       };
     },
-    [ferramenta, cor, espessura, historicoMarcas, setHistoricoMarcas]
+    [ferramenta, cor, espessura, anguloEspiga, historicoMarcas, setHistoricoMarcas]
   );
 
   useEffect(() => {
