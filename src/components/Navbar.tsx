@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, PlusCircle, History, BookOpen, Sparkles } from 'lucide-react';
+import { Menu, X, PlusCircle, History, BookOpen, Sparkles } from 'lucide-react';
 
 interface NavbarProps {
   onNew: () => void;
@@ -29,9 +29,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             id="btn-menu-sanduiche"
             onClick={onToggleMenu}
             className="p-2 -ml-2 rounded-lg text-[#E8F5E9] hover:bg-[#2E7D32] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#8B5A2B] sm:hidden"
-            aria-label="Abrir menu principal"
+            aria-label={isMenuOpen ? 'Fechar menu principal' : 'Abrir menu principal'}
+            aria-expanded={isMenuOpen}
           >
-            <Menu className="w-6 h-6" />
+            <span className="relative block w-6 h-6">
+              <Menu
+                className={`w-6 h-6 absolute inset-0 transition-all duration-200 ${
+                  isMenuOpen ? 'opacity-0 rotate-90 scale-75' : 'opacity-100 rotate-0 scale-100'
+                }`}
+              />
+              <X
+                className={`w-6 h-6 absolute inset-0 transition-all duration-200 ${
+                  isMenuOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-75'
+                }`}
+              />
+            </span>
           </button>
 
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={onNew}>
@@ -60,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             id="nav-btn-nova-resenha"
             onClick={onNew}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold bg-[#2E7D32] text-white hover:bg-[#388E3C] border border-[#4CAF50]/30 shadow-sm transition-all hover:shadow"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold bg-[#2E7D32] text-white hover:bg-[#388E3C] border border-[#4CAF50]/30 shadow-sm transition-all hover:shadow hover:scale-[1.03] active:scale-95"
           >
             <PlusCircle className="w-4 h-4 text-[#A5D6A7]" />
             Nova Resenha
@@ -70,7 +82,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             id="nav-btn-historico"
             onClick={onOpenHistory}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold bg-[#5C3D2E] text-white hover:bg-[#6D4937] border border-[#8B5A2B] shadow-sm transition-all hover:shadow"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold bg-[#5C3D2E] text-white hover:bg-[#6D4937] border border-[#8B5A2B] shadow-sm transition-all hover:shadow hover:scale-[1.03] active:scale-95"
           >
             <History className="w-4 h-4 text-[#D4A373]" />
             Histórico
@@ -80,7 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             id="nav-btn-guia-pelagens"
             onClick={onOpenGuide}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold bg-[#FAF8F5] text-[#1B5E20] hover:bg-white border border-[#D4A373] shadow-sm transition-all hover:shadow"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold bg-[#FAF8F5] text-[#1B5E20] hover:bg-white border border-[#D4A373] shadow-sm transition-all hover:shadow hover:scale-[1.03] active:scale-95"
           >
             <BookOpen className="w-4 h-4 text-[#8B5A2B]" />
             Manual Zootécnico

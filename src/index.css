@@ -1,1 +1,52 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/* As fontes já são carregadas no index.html (Google Fonts); aqui apenas
+   conectamos aos utilitários font-sans / font-serif já usados no app inteiro */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Playfair Display', ui-serif, Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Textura sutil de "papel rural" atrás do conteúdo, sem competir com o texto */
+.textura-rural {
+  background-image: radial-gradient(circle at 1px 1px, rgba(139, 90, 43, 0.08) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* Scrollbar discreta, alinhada à identidade rural (verde/marrom) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #faf8f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4a373;
+  border-radius: 999px;
+  border: 2px solid #faf8f5;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8b5a2b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

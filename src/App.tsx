@@ -10,6 +10,7 @@ import { Step2Graphics } from './components/Step2Graphics';
 import { Step3Review } from './components/Step3Review';
 import { GuideModal } from './components/GuideModal';
 import { HistoryModal } from './components/HistoryModal';
+import { Toast, ToastState } from './components/Toast';
 
 const INITIAL_DATA: ResenhaData = {
   dataCriacao: new Date().toISOString(),
@@ -46,6 +47,7 @@ export default function App() {
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
   const [savedResenhas, setSavedResenhas] = useState<SavedResenha[]>([]);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   // Referências para os 5 canvases
   const canvasLatEsq = useRef<HTMLCanvasElement | null>(null);
@@ -125,7 +127,7 @@ export default function App() {
   const handleStepClick = (targetStep: number) => {
     if (targetStep > 1 && currentStep === 1) {
       if (!data.propNome || !data.propMunicipio || !data.propUF || !data.propTel || !data.resNome || !data.resTel || !data.animNome || !data.animCor || !data.animNasc) {
-        alert('Por favor, preencha os campos obrigatórios marcados com * antes de prosseguir.');
+        setToast({ mensagem: 'Preencha os campos obrigatórios marcados com * antes de prosseguir.', tipo: 'erro' });
         return;
       }
     }
@@ -210,6 +212,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#2C3E50] font-sans selection:bg-[#2E7D32] selection:text-white flex flex-col">
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       {/* Barra de Navegação Superior */}
       <Navbar
         onNew={handleReset}

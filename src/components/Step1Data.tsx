@@ -398,7 +398,7 @@ export const Step1Data: React.FC<Step1DataProps> = ({
         <button
           type="submit"
           id="btn-avancar-etapa2"
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-base font-bold bg-[#1B5E20] text-white hover:bg-[#2E7D32] border border-[#8B5A2B] shadow-md hover:shadow-lg transition-all transform active:scale-98"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-base font-bold bg-[#1B5E20] text-white hover:bg-[#2E7D32] border border-[#8B5A2B] shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95"
         >
           <span>Avançar para Resenha Gráfica (Desenhos)</span>
           <ArrowRight className="w-5 h-5" />

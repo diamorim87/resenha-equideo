@@ -15,6 +15,7 @@ import {
   Share2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { Toast, ToastState } from './Toast';
 
 interface Step3ReviewProps {
   data: ResenhaData;
@@ -33,6 +34,7 @@ export const Step3Review: React.FC<Step3ReviewProps> = ({
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   const handleDownload = async () => {
     setIsGenerating(true);
@@ -48,7 +50,7 @@ export const Step3Review: React.FC<Step3ReviewProps> = ({
       });
     } catch (err) {
       console.error('Erro ao gerar PDF:', err);
-      alert('Ocorreu um erro ao gerar o PDF. Verifique os dados e tente novamente.');
+      setToast({ mensagem: 'Ocorreu um erro ao gerar o PDF. Verifique os dados e tente novamente.', tipo: 'erro' });
     } finally {
       setIsGenerating(false);
     }
@@ -56,6 +58,8 @@ export const Step3Review: React.FC<Step3ReviewProps> = ({
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       {/* CARD PRINCIPAL DE RESUMO E EDITAR RESENHA */}
       <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-[#EDE6DB]">
         <div className="flex items-center justify-between pb-4 mb-5 border-b-2 border-[#E8F5E9]">
@@ -152,7 +156,7 @@ export const Step3Review: React.FC<Step3ReviewProps> = ({
           id="btn-baixar-pdf-final"
           disabled={isGenerating}
           onClick={handleDownload}
-          className="w-full inline-flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-lg font-bold bg-[#1B5E20] text-white hover:bg-[#2E7D32] border-2 border-[#8B5A2B] shadow-lg hover:shadow-xl transition-all transform active:scale-98 disabled:opacity-75 cursor-pointer"
+          className="w-full inline-flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-lg font-bold bg-[#1B5E20] text-white hover:bg-[#2E7D32] border-2 border-[#8B5A2B] shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.015] active:scale-95 disabled:opacity-75 disabled:hover:scale-100 disabled:active:scale-100 cursor-pointer disabled:cursor-not-allowed"
         >
           {isGenerating ? (
             <>
