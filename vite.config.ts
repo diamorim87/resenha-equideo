@@ -34,20 +34,8 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
-          // Assets grandes (fotos do manual) precisam de um limite maior que o
-          // padrao (2 MiB) para entrarem no cache do App Shell
-          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-          // As pranchas são carregadas somente quando o leitor abre a cartilha.
-          // Evita baixar ~30 MB ao instalar o app pela primeira vez.
-          globIgnores: ['**/manual-gerado/**'],
-          runtimeCaching: [{
-            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith('/manual-gerado/'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'manual-ilustrado',
-              expiration: { maxEntries: 32, maxAgeSeconds: 30 * 24 * 60 * 60 },
-            },
-          }],
+          // Inclui as pranchas JPEG no app instalado para consulta offline.
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webmanifest}'],
         },
       }),
     ],
