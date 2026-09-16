@@ -36,6 +36,8 @@ export default defineConfig(() => {
         workbox: {
           // Inclui as pranchas JPEG no app instalado para consulta offline.
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webmanifest}'],
+          skipWaiting: true,
+          clientsClaim: true,
         },
       }),
     ],

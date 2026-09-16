@@ -38,6 +38,7 @@ interface UseCanvasDrawingParams {
   historicoMarcas: string[];
   setHistoricoMarcas: Dispatch<SetStateAction<string[]>>;
   initialDesenhos?: InitialDesenhosMap;
+  onDrawingChange?: () => void;
 }
 
 export function useCanvasDrawing({
@@ -50,6 +51,7 @@ export function useCanvasDrawing({
   historicoMarcas,
   setHistoricoMarcas,
   initialDesenhos,
+  onDrawingChange,
 }: UseCanvasDrawingParams) {
   const isDrawing = useRef(false);
   const [ultimaMarca, setUltimaMarca] = useState<string | null>(null);
@@ -171,6 +173,7 @@ export function useCanvasDrawing({
             setUltimaMarca(texto);
           }
           isDrawing.current = false;
+          onDrawingChange?.();
           return;
         }
 
@@ -233,6 +236,7 @@ export function useCanvasDrawing({
         if (isDrawing.current) {
           e.preventDefault();
           isDrawing.current = false;
+          onDrawingChange?.();
         }
       };
 
@@ -258,7 +262,7 @@ export function useCanvasDrawing({
         canvas.removeEventListener('touchcancel', stopDraw);
       };
     },
-    [ferramenta, cor, espessura, anguloEspiga, historicoMarcas, setHistoricoMarcas]
+    [ferramenta, cor, espessura, anguloEspiga, historicoMarcas, setHistoricoMarcas, onDrawingChange]
   );
 
   useEffect(() => {

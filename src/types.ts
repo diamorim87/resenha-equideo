@@ -6,6 +6,14 @@ export type ToolType = 'lapis' | 'borracha' | 'carimbo_x' | 'carimbo_espiga';
 
 export type CanvasId = 'canvasLatEsq' | 'canvasLatDir' | 'canvasFrontal' | 'canvasChanfro' | 'canvasPeito';
 
+export interface DesenhosMap {
+  latEsq: string | null;
+  latDir: string | null;
+  frontal: string | null;
+  chanfro: string | null;
+  peito: string | null;
+}
+
 /**
  * Configuração de uma imagem de fundo (silhueta). `crop` recorta uma sub-região
  * vertical em pixels naturais da imagem de origem — usado quando um único

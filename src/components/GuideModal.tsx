@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, BookOpen, Award, Search } from 'lucide-react';
+import { X, BookOpen, Award, Search, Maximize2, GitCompareArrows } from 'lucide-react';
 import { GRUPOS_PELAGENS } from '../data/pelagens';
 import { MarcaDiagrama, MarcaCabecaId, MarcaCorpoId } from './MarcaDiagrama';
 import { ManualIllustration, marcaSprite, pelagemSprite } from './ManualIllustration';
@@ -36,7 +36,16 @@ const PARTICULARIDADES_CORPO: { id: MarcaCorpoId; nome: string; descricao: strin
 export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
   const [busca, setBusca] = useState('');
   const [aba, setAba] = useState<'pelagens' | 'cabeca' | 'corpo' | 'simbolos'>('pelagens');
+  const [selecionadas, setSelecionadas] = useState<Array<{ valor: string; grupo: string; index: number }>>([]);
+  const [ampliada, setAmpliada] = useState<{ valor: string; grupo: string; index: number } | null>(null);
+  const [comparando, setComparando] = useState(false);
   if (!isOpen) return null;
+
+  const alternarComparacao = (item: { valor: string; grupo: string; index: number }) => {
+    setSelecionadas((atual) => atual.some((p) => p.valor === item.valor)
+      ? atual.filter((p) => p.valor !== item.valor)
+      : [...atual.slice(-1), item]);
+  };
 
   const termo = busca.trim().toLocaleLowerCase('pt-BR');
   const gruposVisiveis = GRUPOS_PELAGENS.map((grupo) => ({
@@ -202,6 +211,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
                         <div className="p-2.5">
                           <strong className="block text-xs leading-snug text-[#2C3E50]">{op.valor}</strong>
                           {op.nome !== op.valor && <p className="text-[11px] leading-snug text-[#6B7280] mt-0.5">{op.nome}</p>}
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            <button type="button" onClick={() => { setComparando(false); setAmpliada({ valor: op.valor, grupo: grp.grupo, index: op.index }); }} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#1B5E20] hover:bg-[#E8F3E8]" aria-label={`Ampliar ${op.valor}`}><Maximize2 className="w-3 h-3" /> Ampliar</button>
+                            <button type="button" onClick={() => alternarComparacao({ valor: op.valor, grupo: grp.grupo, index: op.index })} aria-pressed={selecionadas.some((p) => p.valor === op.valor)} className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold ${selecionadas.some((p) => p.valor === op.valor) ? 'bg-[#1B5E20] text-white' : 'text-[#5C3D2E] hover:bg-[#EFE6D8]'}`}><GitCompareArrows className="w-3 h-3" /> {selecionadas.some((p) => p.valor === op.valor) ? 'Selecionada' : 'Comparar'}</button>
+                          </div>
                         </div>
                       </article>
                     ))}
@@ -213,7 +226,8 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-[#FAF8F5] p-4 border-t border-[#EDE6DB] flex justify-end">
+        <div className="bg-[#FAF8F5] p-4 border-t border-[#EDE6DB] flex flex-wrap gap-2 justify-between">
+          {aba === 'pelagens' && <button type="button" disabled={selecionadas.length !== 2} onClick={() => { setComparando(true); setAmpliada(selecionadas[0]); }} className="rounded-xl px-4 py-2.5 text-sm font-bold bg-[#8B5A2B] text-white disabled:opacity-40 disabled:cursor-not-allowed">Comparar lado a lado ({selecionadas.length}/2)</button>}
           <button
             type="button"
             onClick={onClose}
@@ -223,6 +237,16 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
       </div>
+      {ampliada && (
+        <div role="dialog" aria-modal="true" aria-label={comparando ? 'Comparação de pelagens' : `Pelagem ${ampliada.valor} ampliada`} className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3 sm:p-6" onClick={() => setAmpliada(null)}>
+          <div className="w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-2xl bg-[#FAF8F5] p-3 sm:p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center gap-3 mb-3"><h4 className="font-serif font-bold text-[#1B5E20]">{comparando ? 'Comparar pelagens' : 'Pelagem ampliada'}</h4><button type="button" onClick={() => setAmpliada(null)} aria-label="Fechar ampliação" className="rounded-full p-2 hover:bg-[#EDE6DB]"><X className="w-5 h-5" /></button></div>
+            <div className={`grid gap-3 ${comparando ? 'grid-cols-2' : 'grid-cols-1 max-w-lg mx-auto'}`}>
+              {(comparando ? selecionadas : [ampliada]).map((item) => <div key={item.valor} className="min-w-0 rounded-xl overflow-hidden bg-white border border-[#EDE6DB]"><ManualIllustration sprite={pelagemSprite(item.grupo, item.index)} alt={`Pelagem ${item.valor} ampliada`} /><p className="p-3 text-sm font-bold text-[#2C3E50]">{item.valor}</p></div>)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ToolType, SilhuetaBgConfig } from '../../types';
+import { ToolType, SilhuetaBgConfig, DesenhosMap } from '../../types';
 import { ArrowLeft, Wand2 } from 'lucide-react';
 import { useCanvasDrawing, CanvasRefsMap } from './useCanvasDrawing';
 import { Toolbar } from './Toolbar';
@@ -17,13 +17,8 @@ interface Step2GraphicsProps {
   };
   historicoMarcas: string[];
   setHistoricoMarcas: React.Dispatch<React.SetStateAction<string[]>>;
-  initialDesenhos?: {
-    latEsq: string | null;
-    latDir: string | null;
-    frontal: string | null;
-    chanfro: string | null;
-    peito: string | null;
-  };
+  initialDesenhos?: DesenhosMap;
+  onDrawingChange?: () => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -34,6 +29,7 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
   historicoMarcas,
   setHistoricoMarcas,
   initialDesenhos,
+  onDrawingChange,
   onNext,
   onBack,
 }) => {
@@ -52,6 +48,7 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
     historicoMarcas,
     setHistoricoMarcas,
     initialDesenhos,
+    onDrawingChange,
   });
 
   const handleLimparCanvas = (
@@ -64,6 +61,7 @@ export const Step2Graphics: React.FC<Step2GraphicsProps> = ({
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHistoricoMarcas((prev) => prev.filter((m) => !m.includes(vistaNome)));
+    onDrawingChange?.();
   };
 
   const handleRemoverMarca = (index: number) => {

@@ -21,7 +21,9 @@ if ('serviceWorker' in navigator) {
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;
       const checarAtualizacao = () => registration.update().catch(() => {});
+      checarAtualizacao();
       setInterval(checarAtualizacao, 60 * 60 * 1000);
+      window.addEventListener('online', checarAtualizacao);
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') checarAtualizacao();
       });

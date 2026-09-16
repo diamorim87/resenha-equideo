@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ResenhaData, SavedResenha } from './types';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ResenhaData, SavedResenha, DesenhosMap } from './types';
+import { DESENHOS_VAZIOS, carregarRascunho, salvarRascunho, limparRascunho, salvarDesenhosHistorico, carregarDesenhosHistorico, apagarDesenhosHistorico } from './utils/draftStore';
 import { SILHUETA_BG_CONFIGS } from './utils/silhouetteAssets';
 import { compilarResenhaDescritiva } from './utils/anatomicalEngine';
 import { gerarPdfResenha } from './utils/pdfGenerator';
@@ -13,6 +14,7 @@ import { HistoryModal } from './components/HistoryModal';
 import { Toast, ToastState } from './components/Toast';
 
 const INITIAL_DATA: ResenhaData = {
+  id: `res_${Date.now()}`,
   dataCriacao: new Date().toISOString(),
   propNome: '',
   propPropriedade: '',
@@ -37,6 +39,7 @@ const STORAGE_KEY = 'amorimpec_resenhas_v1';
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
   const [data, setData] = useState<ResenhaData>(INITIAL_DATA);
   const [historicoMarcas, setHistoricoMarcas] = useState<string[]>([]);
   // true assim que o resenhador digitar qualquer coisa no campo de texto da
@@ -59,13 +62,29 @@ export default function App() {
   // Snapshots dos desenhos (PNG data URL), capturados antes dos canvases serem
   // desmontados ao sair da Etapa 2 — necessários para o PDF, já que as refs viram
   // null assim que o componente Step2Graphics deixa de ser renderizado.
-  const [desenhosSnapshot, setDesenhosSnapshot] = useState<{
-    latEsq: string | null;
-    latDir: string | null;
-    frontal: string | null;
-    chanfro: string | null;
-    peito: string | null;
-  }>({ latEsq: null, latDir: null, frontal: null, chanfro: null, peito: null });
+  const [desenhosSnapshot, setDesenhosSnapshot] = useState<DesenhosMap>(DESENHOS_VAZIOS);
+
+  useEffect(() => {
+    carregarRascunho().then((rascunho) => {
+      if (rascunho) {
+        setData(rascunho.data);
+        setHistoricoMarcas(rascunho.historicoMarcas);
+        setDesenhosSnapshot(rascunho.desenhos);
+        setDescricaoEditadaManualmente(rascunho.descricaoEditadaManualmente);
+        setCurrentStep(Math.min(3, Math.max(1, rascunho.currentStep)));
+      }
+    }).catch((erro) => console.warn('Não foi possível carregar o rascunho', erro))
+      .finally(() => setRascunhoCarregado(true));
+  }, []);
+
+  useEffect(() => {
+    if (!rascunhoCarregado) return;
+    const temporizador = window.setTimeout(() => {
+      salvarRascunho({ data, historicoMarcas, desenhos: desenhosSnapshot, descricaoEditadaManualmente, currentStep, updatedAt: Date.now() })
+        .catch((erro) => console.warn('Não foi possível salvar o rascunho', erro));
+    }, 600);
+    return () => window.clearTimeout(temporizador);
+  }, [rascunhoCarregado, data, historicoMarcas, desenhosSnapshot, descricaoEditadaManualmente, currentStep]);
 
   // Carrega histórico do localStorage
   useEffect(() => {
@@ -80,7 +99,7 @@ export default function App() {
   }, []);
 
   // Salva no localStorage quando há mudanças relevantes
-  const salvarNoHistoricoLocal = (resenhaParaSalvar: ResenhaData) => {
+  const salvarNoHistoricoLocal = (resenhaParaSalvar: ResenhaData, desenhos = desenhosSnapshot) => {
     if (!resenhaParaSalvar.animNome && !resenhaParaSalvar.propNome) return;
     try {
       const item: SavedResenha = {
@@ -96,6 +115,7 @@ export default function App() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
         return updated;
       });
+      salvarDesenhosHistorico(item.id, desenhos).catch((erro) => console.warn('Não foi possível salvar os desenhos no histórico', erro));
     } catch (e) {
       console.warn('Erro ao salvar no histórico', e);
     }
@@ -113,15 +133,17 @@ export default function App() {
   };
 
   // Captura o desenho atual de cada canvas como PNG antes da Etapa 2 ser desmontada
-  const capturarDesenhosAtuais = () => {
-    setDesenhosSnapshot({
+  const capturarDesenhosAtuais = useCallback((): DesenhosMap => {
+    const atuais = {
       latEsq: canvasLatEsq.current ? canvasLatEsq.current.toDataURL('image/png') : null,
       latDir: canvasLatDir.current ? canvasLatDir.current.toDataURL('image/png') : null,
       frontal: canvasFrontal.current ? canvasFrontal.current.toDataURL('image/png') : null,
       chanfro: canvasChanfro.current ? canvasChanfro.current.toDataURL('image/png') : null,
       peito: canvasPeito.current ? canvasPeito.current.toDataURL('image/png') : null,
-    });
-  };
+    };
+    setDesenhosSnapshot(atuais);
+    return atuais;
+  }, []);
 
   // Navegação entre passos
   const handleStepClick = (targetStep: number) => {
@@ -159,9 +181,9 @@ export default function App() {
   };
 
   const avancarParaEtapa3 = () => {
-    capturarDesenhosAtuais();
+    const desenhos = capturarDesenhosAtuais();
     prepararResenhaDescritiva();
-    salvarNoHistoricoLocal({ ...data, historicoMarcas });
+    salvarNoHistoricoLocal({ ...data, historicoMarcas }, desenhos);
     setCurrentStep(3);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -184,16 +206,19 @@ export default function App() {
           if (ctx) ctx.clearRect(0, 0, ref.current.width, ref.current.height);
         }
       });
-      setData({ ...INITIAL_DATA, dataCriacao: new Date().toISOString() });
+      limparRascunho().catch((erro) => console.warn('Não foi possível limpar o rascunho', erro));
+      setData({ ...INITIAL_DATA, id: `res_${Date.now()}`, dataCriacao: new Date().toISOString() });
       setHistoricoMarcas([]);
-      setDesenhosSnapshot({ latEsq: null, latDir: null, frontal: null, chanfro: null, peito: null });
+      setDesenhosSnapshot(DESENHOS_VAZIOS);
       setDescricaoEditadaManualmente(false);
       setCurrentStep(1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
-  const handleLoadFromHistory = (item: SavedResenha) => {
+  const handleLoadFromHistory = async (item: SavedResenha) => {
+    const desenhos = await carregarDesenhosHistorico(item.id).catch(() => null);
+    setDesenhosSnapshot(desenhos ?? DESENHOS_VAZIOS);
     setData(item);
     setHistoricoMarcas(item.historicoMarcas || []);
     // Uma ficha carregada já tem uma descrição própria (gerada ou editada) —
@@ -203,6 +228,7 @@ export default function App() {
   };
 
   const handleDeleteFromHistory = (id: string) => {
+    apagarDesenhosHistorico(id).catch((erro) => console.warn('Não foi possível apagar os desenhos do histórico', erro));
     setSavedResenhas((prev) => {
       const updated = prev.filter((item) => item.id !== id);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -213,6 +239,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#2C3E50] font-sans selection:bg-[#2E7D32] selection:text-white flex flex-col">
       <Toast toast={toast} onClose={() => setToast(null)} />
+      {!rascunhoCarregado && <div className="fixed inset-0 z-[70] bg-[#FAF8F5] flex items-center justify-center text-[#1B5E20] font-semibold" role="status">Carregando sua ficha...</div>}
 
       {/* Barra de Navegação Superior */}
       <Navbar
@@ -258,6 +285,7 @@ export default function App() {
               historicoMarcas={historicoMarcas}
               setHistoricoMarcas={setHistoricoMarcas}
               initialDesenhos={desenhosSnapshot}
+              onDrawingChange={capturarDesenhosAtuais}
               onNext={avancarParaEtapa3}
               onBack={() => {
                 capturarDesenhosAtuais();
