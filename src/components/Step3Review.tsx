@@ -69,7 +69,7 @@ export const Step3Review: React.FC<Step3ReviewProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-bold font-serif text-[#1B5E20]">
-                Ficha de Resenha Zootécnica Oficial
+                Ficha de Resenha Zootécnica
               </h2>
               <p className="text-xs text-[#6B7280]">
                 Confira o laudo descritivo e faça os ajustes necessários antes de emitir o PDF
@@ -124,7 +124,7 @@ export const Step3Review: React.FC<Step3ReviewProps> = ({
             value={data.animDescricao}
             onChange={(e) => onChangeDescricao(e.target.value)}
             placeholder="Descreva as marcas anatômicas, calçados, rodopios, espigas, estrelas ou outras particularidades..."
-            className="w-full p-4 rounded-xl border border-[#D1D5DB] bg-[#FAF8F5] focus:bg-white focus:border-[#1B5E20] focus:ring-2 focus:ring-[#1B5E20]/20 text-[#1F2937] text-sm leading-relaxed font-mono transition-all"
+            className="w-full p-4 rounded-xl border border-[#D1D5DB] bg-[#FAF8F5] focus:bg-white focus:border-[#1B5E20] focus:ring-2 focus:ring-[#1B5E20]/20 text-[#1F2937] text-base leading-relaxed font-sans transition-all"
           />
           <p className="text-xs text-[#6B7280] mt-1.5">
             Este texto foi compilado automaticamente pelo motor zootécnico com base nos seus traços gráficos. Você pode complementar com observações veterinárias.
@@ -140,9 +140,9 @@ export const Step3Review: React.FC<Step3ReviewProps> = ({
               <CheckCircle className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-[#1B5E20]">PDF Oficial Gerado com Sucesso!</h4>
+              <h4 className="text-sm font-bold text-[#1B5E20]">PDF gerado com sucesso!</h4>
               <p className="text-xs text-[#2E7D32]">
-                O documento com as vistas gráficas e resenha descritiva foi descarregado no seu dispositivo.
+                A ficha com os desenhos e a descrição foi baixada no seu dispositivo.
               </p>
             </div>
           </div>
@@ -161,12 +161,12 @@ export const Step3Review: React.FC<Step3ReviewProps> = ({
           {isGenerating ? (
             <>
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>Gerando PDF Oficial de Alta Resolução...</span>
+              <span>Preparando sua ficha...</span>
             </>
           ) : (
             <>
               <Download className="w-6 h-6 text-[#A5D6A7]" />
-              <span>Descarregar Ficha em PDF Oficial</span>
+              <span>Baixar ficha em PDF</span>
             </>
           )}
         </button>

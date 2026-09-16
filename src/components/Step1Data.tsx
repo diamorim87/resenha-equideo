@@ -245,8 +245,8 @@ export const Step1Data: React.FC<Step1DataProps> = ({
 
       {/* 3. IDENTIFICAÇÃO DO ANIMAL */}
       <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-[#EDE6DB] hover:border-[#8B5A2B]/40 transition-colors">
-        <div className="flex items-center justify-between pb-3 mb-5 border-b-2 border-[#E8F5E9]">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 mb-5 border-b-2 border-[#E8F5E9]">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-[#E8F5E9] text-[#1B5E20] flex items-center justify-center font-bold">
               <Sparkles className="w-5 h-5 text-[#2E7D32]" />
             </div>
@@ -264,7 +264,7 @@ export const Step1Data: React.FC<Step1DataProps> = ({
             type="button"
             id="btn-abrir-manual-pelagens"
             onClick={onOpenGuide}
-            className="text-xs font-semibold text-[#8B5A2B] hover:text-[#5C3D2E] flex items-center gap-1 bg-[#FAF8F5] px-3 py-1.5 rounded-lg border border-[#D4A373] hover:bg-[#F5EBE6] transition-all"
+            className="text-xs font-semibold text-[#8B5A2B] hover:text-[#5C3D2E] inline-flex self-start sm:self-auto items-center gap-1 bg-[#FAF8F5] px-3 py-2 rounded-lg border border-[#D4A373] hover:bg-[#F5EBE6] transition-all shrink-0"
           >
             <HelpCircle className="w-4 h-4" />
             Catálogo de Pelagens

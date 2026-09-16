@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, BookOpen, Award, Search, Maximize2, GitCompareArrows } from 'lucide-react';
 import { GRUPOS_PELAGENS } from '../data/pelagens';
 import { MarcaDiagrama, MarcaCabecaId, MarcaCorpoId } from './MarcaDiagrama';
@@ -35,10 +35,33 @@ const PARTICULARIDADES_CORPO: { id: MarcaCorpoId; nome: string; descricao: strin
 
 export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
   const [busca, setBusca] = useState('');
+  const [grupoFiltro, setGrupoFiltro] = useState('todos');
   const [aba, setAba] = useState<'pelagens' | 'cabeca' | 'corpo' | 'simbolos'>('pelagens');
   const [selecionadas, setSelecionadas] = useState<Array<{ valor: string; grupo: string; index: number }>>([]);
   const [ampliada, setAmpliada] = useState<{ valor: string; grupo: string; index: number } | null>(null);
   const [comparando, setComparando] = useState(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    setAba('pelagens');
+    setBusca('');
+    setGrupoFiltro('todos');
+    setSelecionadas([]);
+    setAmpliada(null);
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = overflowAnterior; };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fecharComEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (ampliada) setAmpliada(null);
+      else onClose();
+    };
+    document.addEventListener('keydown', fecharComEscape);
+    return () => document.removeEventListener('keydown', fecharComEscape);
+  }, [isOpen, ampliada, onClose]);
   if (!isOpen) return null;
 
   const alternarComparacao = (item: { valor: string; grupo: string; index: number }) => {
@@ -48,23 +71,23 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
   };
 
   const termo = busca.trim().toLocaleLowerCase('pt-BR');
-  const gruposVisiveis = GRUPOS_PELAGENS.map((grupo) => ({
+  const gruposVisiveis = GRUPOS_PELAGENS.filter((grupo) => grupoFiltro === 'todos' || grupo.grupo === grupoFiltro).map((grupo) => ({
     ...grupo,
     opcoes: grupo.opcoes.map((opcao, index) => ({ ...opcao, index }))
       .filter((opcao) => !termo || `${opcao.nome} ${grupo.grupo}`.toLocaleLowerCase('pt-BR').includes(termo)),
   })).filter((grupo) => grupo.opcoes.length > 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div role="dialog" aria-modal="true" aria-labelledby="titulo-manual" className="bg-[#FAF8F5] rounded-3xl max-w-5xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-[#D6C4AB]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div role="dialog" aria-modal="true" aria-labelledby="titulo-manual" className="bg-[#FAF8F5] rounded-2xl sm:rounded-3xl max-w-5xl w-full max-h-[96dvh] sm:max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-[#D6C4AB]">
         {/* Modal Header */}
-        <div className="bg-[#1B5E20] text-white p-5 flex items-center justify-between border-b-2 border-[#8B5A2B]">
+        <div className="bg-[#1B5E20] text-white p-3 sm:p-5 flex items-center justify-between gap-3 border-b-2 border-[#8B5A2B]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#2E7D32] flex items-center justify-center border border-[#A5D6A7]">
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 id="titulo-manual" className="text-lg font-bold font-serif text-[#FAF8F5]">
+              <h3 id="titulo-manual" className="text-base sm:text-lg font-bold font-serif text-[#FAF8F5]">
                 Manual Zootécnico de Resenha Equina
               </h3>
               <p className="text-xs text-[#C8E6C9]">
@@ -97,7 +120,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Modal Body */}
-        <div key={aba} className="p-4 sm:p-6 overflow-y-auto space-y-6 text-sm text-[#2C3E50]">
+        <div key={aba} className="p-2.5 sm:p-6 overflow-y-auto space-y-6 text-sm text-[#2C3E50]">
           {/* 1. Símbolos Oficiais e Convenções Gráficas */}
           {aba === 'simbolos' && <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
             <h4 className="font-bold font-serif text-[#1B5E20] text-base mb-3 flex items-center gap-2">
@@ -108,21 +131,17 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
               As marcações só são registradas dentro do contorno do cavalo em cada silhueta — cliques fora do desenho (na área em branco ao redor) não geram anotação.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE6DB]">
-                <span className="font-bold text-[#1B5E20] block text-sm mb-1">
-                  X — Rodopio de Pelos
-                </span>
-                <p className="text-[#6B7280]">
-                  Ponto de convergência ou divergência centrífuga dos pelos. Obrigatório na fronte e tábua do pescoço.
-                </p>
+              <div className="rounded-xl bg-[#FAF8F5] border border-[#EDE6DB] overflow-hidden">
+                <img src="/manual-gerado/rodopio-pelos.jpg" alt="Close da testa de um cavalo castanho com pelos formando um pequeno redemoinho" className="w-full h-48 object-cover object-center" loading="lazy" />
+                <div className="p-3"><span className="font-bold text-[#1B5E20] block text-sm mb-1">X — Rodopio de Pelos</span>
+                <p className="text-[#6B7280] leading-relaxed">Procure o centro onde os pelos mudam de direção e formam um redemoinho. Marque esse centro com X na vista correspondente.</p>
+                <p className="mt-2 text-[11px] text-[#8B5A2B]">Imagem ilustrativa gerada por IA; confirme no animal.</p></div>
               </div>
-              <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE6DB]">
-                <span className="font-bold text-[#1B5E20] block text-sm mb-1">
-                  → E — Espiga
-                </span>
-                <p className="text-[#6B7280]">
-                  Linha de encontro de duas correntes de pelos em sentidos opostos. Gire a seta (controle de "Direção" ao lado do carimbo) até apontar para o sentido real da convergência observado na pelagem.
-                </p>
+              <div className="rounded-xl bg-[#FAF8F5] border border-[#EDE6DB] overflow-hidden">
+                <img src="/manual-gerado/espiga-pelos.jpg" alt="Close do pescoço de um cavalo baio com duas correntes de pelos encontrando-se em uma linha alongada" className="w-full h-48 object-cover object-center" loading="lazy" />
+                <div className="p-3"><span className="font-bold text-[#1B5E20] block text-sm mb-1">→ E — Espiga</span>
+                <p className="text-[#6B7280] leading-relaxed">Observe a linha alongada onde duas correntes de pelos se encontram. Use o carimbo E e gire a seta para indicar a direção observada.</p>
+                <p className="mt-2 text-[11px] text-[#8B5A2B]">Imagem ilustrativa gerada por IA; confirme no animal.</p></div>
               </div>
               <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE6DB]">
                 <span className="font-bold text-[#DC2626] block text-sm mb-1">
@@ -187,7 +206,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
           </div>}
 
           {/* 4. Catálogo de Pelagens */}
-          {aba === 'pelagens' && <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
+          {aba === 'pelagens' && <div className="bg-white p-3 sm:p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
               <div>
                 <h4 className="font-bold font-serif text-[#1B5E20] text-lg">Cartilha visual de pelagens</h4>
@@ -199,18 +218,26 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
                 <input type="search" value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar pelagem..." className="w-full rounded-xl border border-[#D6C4AB] bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-[#1B5E20] focus:ring-2 focus:ring-[#1B5E20]/20" />
               </label>
             </div>
+            <label className="flex items-center gap-2 mb-4 text-xs font-semibold text-[#5C3D2E]">
+              Grupo
+              <select value={grupoFiltro} onChange={(event) => setGrupoFiltro(event.target.value)} className="min-w-0 flex-1 sm:flex-none rounded-xl border border-[#D6C4AB] bg-[#FAF8F5] px-3 py-2 text-sm text-[#2C3E50] focus:outline-none focus:ring-2 focus:ring-[#1B5E20]/30" aria-label="Filtrar grupo de pelagens">
+                <option value="todos">Todos os grupos</option>
+                {GRUPOS_PELAGENS.map((grupo) => <option key={grupo.grupo} value={grupo.grupo}>{grupo.grupo}</option>)}
+              </select>
+              <span className="text-[#6B7280] font-normal">{gruposVisiveis.reduce((total, grupo) => total + grupo.opcoes.length, 0)} pelagens</span>
+            </label>
             {gruposVisiveis.length === 0 && <p className="rounded-xl bg-[#FAF8F5] p-5 text-[#6B7280]">Nenhuma pelagem encontrada para “{busca}”.</p>}
             <div className="space-y-6">
               {gruposVisiveis.map((grp) => (
                 <section key={grp.grupo} aria-label={grp.grupo}>
                   <h5 className="font-bold text-xs uppercase tracking-wider text-[#8B5A2B] mb-2">{grp.grupo} <span className="font-normal text-[#6B7280]">· {grp.opcoes.length}</span></h5>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
                     {grp.opcoes.map((op) => (
-                      <article key={op.valor} className="overflow-hidden rounded-xl border border-[#EDE6DB] bg-[#FAF8F5] shadow-sm">
+                      <article key={op.valor} className="grid grid-cols-[38%_1fr] sm:block overflow-hidden rounded-xl border border-[#EDE6DB] bg-[#FAF8F5] shadow-sm hover:border-[#B88A57] hover:shadow-md transition-all">
                         <ManualIllustration sprite={pelagemSprite(grp.grupo, op.index)} alt={`Animal fictício com pelagem ${op.valor}`} />
-                        <div className="p-2.5">
-                          <strong className="block text-xs leading-snug text-[#2C3E50]">{op.valor}</strong>
-                          {op.nome !== op.valor && <p className="text-[11px] leading-snug text-[#6B7280] mt-0.5">{op.nome}</p>}
+                        <div className="p-2.5 flex flex-col justify-between min-w-0">
+                          <div><strong className="block text-sm sm:text-xs leading-snug text-[#2C3E50]">{op.valor}</strong>
+                          {op.nome !== op.valor && <p className="text-xs sm:text-[11px] leading-snug text-[#6B7280] mt-0.5">{op.nome}</p>}</div>
                           <div className="flex flex-wrap gap-1 mt-2">
                             <button type="button" onClick={() => { setComparando(false); setAmpliada({ valor: op.valor, grupo: grp.grupo, index: op.index }); }} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#1B5E20] hover:bg-[#E8F3E8]" aria-label={`Ampliar ${op.valor}`}><Maximize2 className="w-3 h-3" /> Ampliar</button>
                             <button type="button" onClick={() => alternarComparacao({ valor: op.valor, grupo: grp.grupo, index: op.index })} aria-pressed={selecionadas.some((p) => p.valor === op.valor)} className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold ${selecionadas.some((p) => p.valor === op.valor) ? 'bg-[#1B5E20] text-white' : 'text-[#5C3D2E] hover:bg-[#EFE6D8]'}`}><GitCompareArrows className="w-3 h-3" /> {selecionadas.some((p) => p.valor === op.valor) ? 'Selecionada' : 'Comparar'}</button>
@@ -227,7 +254,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
 
         {/* Modal Footer */}
         <div className="bg-[#FAF8F5] p-4 border-t border-[#EDE6DB] flex flex-wrap gap-2 justify-between">
-          {aba === 'pelagens' && <button type="button" disabled={selecionadas.length !== 2} onClick={() => { setComparando(true); setAmpliada(selecionadas[0]); }} className="rounded-xl px-4 py-2.5 text-sm font-bold bg-[#8B5A2B] text-white disabled:opacity-40 disabled:cursor-not-allowed">Comparar lado a lado ({selecionadas.length}/2)</button>}
+          {aba === 'pelagens' && selecionadas.length > 0 && <button type="button" disabled={selecionadas.length !== 2} onClick={() => { setComparando(true); setAmpliada(selecionadas[0]); }} className="rounded-xl px-4 py-2.5 text-sm font-bold bg-[#8B5A2B] text-white disabled:opacity-50 disabled:cursor-not-allowed">Comparar lado a lado ({selecionadas.length}/2)</button>}
           <button
             type="button"
             onClick={onClose}

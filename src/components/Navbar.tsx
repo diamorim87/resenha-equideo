@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, X, PlusCircle, History, BookOpen, Sparkles } from 'lucide-react';
+import { Menu, X, PlusCircle, History, BookOpen } from 'lucide-react';
 
 interface NavbarProps {
   onNew: () => void;
@@ -46,11 +46,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </button>
 
-          <div className="flex items-center gap-3 cursor-pointer select-none" onClick={onNew}>
+          <div className="flex items-center gap-3 select-none min-w-0">
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#FAF8F5] to-[#EDE6DB] border-2 border-[#D4A373] flex items-center justify-center shadow-md transform transition hover:scale-105">
               <span className="text-2xl" role="img" aria-label="Cavalo">🐴</span>
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-xl font-bold tracking-tight font-serif text-[#FAF8F5]">
                   Amorimpec
@@ -59,8 +59,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Zootecnia Rural
                 </span>
               </div>
-              <p className="text-xs text-[#C8E6C9] font-medium tracking-wide">
-                Ficha Oficial de Resenha Equina, Asnina e Muar
+              <p className="text-[11px] sm:text-xs text-[#C8E6C9] font-medium tracking-wide leading-tight">
+                Ficha de Resenha Equina, Asnina e Muar
               </p>
             </div>
           </div>

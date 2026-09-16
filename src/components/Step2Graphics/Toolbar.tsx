@@ -28,7 +28,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onAnguloEspigaChange,
 }) => {
   return (
-    <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border-2 border-[#8B5A2B]/40 sticky top-20 z-30">
+    <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border-2 border-[#8B5A2B]/40 sm:sticky sm:top-20 z-30">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Seletor de Cores / Traço */}
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -42,7 +42,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             id="tool-cor-preto"
             onClick={() => onSelectLapis('black')}
             title="Marcação Escura / Calçado Preto"
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all shadow-sm ${
+            className={`w-11 h-11 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-white transition-all shadow-sm ${
               ferramenta === 'lapis' && cor === 'black'
                 ? 'ring-4 ring-[#8B5A2B] scale-110 bg-[#1F2937]'
                 : 'bg-[#2D3748] hover:scale-105'
@@ -57,7 +57,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             id="tool-cor-vermelho"
             onClick={() => onSelectLapis('red')}
             title="Cicatriz / Ferida / Marca a Fogo"
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all shadow-sm ${
+            className={`w-11 h-11 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-white transition-all shadow-sm ${
               ferramenta === 'lapis' && cor === 'red'
                 ? 'ring-4 ring-[#8B5A2B] scale-110 bg-[#DC2626]'
                 : 'bg-[#EF4444] hover:scale-105'
@@ -72,7 +72,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             id="tool-cor-marrom"
             onClick={() => onSelectLapis('saddlebrown')}
             title="Mancha Castanha / Alazã"
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all shadow-sm ${
+            className={`w-11 h-11 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-white transition-all shadow-sm ${
               ferramenta === 'lapis' && cor === 'saddlebrown'
                 ? 'ring-4 ring-[#1B5E20] scale-110 bg-[#5C3D2E]'
                 : 'bg-[#8B5A2B] hover:scale-105'
@@ -87,7 +87,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             id="tool-cor-branco"
             onClick={() => onSelectLapis('white')}
             title="Mancha Branca / Calçado / Luzeiro Despigmentado"
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-[#5C3D2E] border-2 border-[#D4A373] transition-all shadow-sm ${
+            className={`w-11 h-11 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-[#5C3D2E] border-2 border-[#D4A373] transition-all shadow-sm ${
               ferramenta === 'lapis' && cor === 'white'
                 ? 'ring-4 ring-[#1B5E20] scale-110 bg-white font-bold'
                 : 'bg-[#FAF8F5] hover:scale-105'
@@ -102,7 +102,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             id="tool-borracha"
             onClick={onSelectBorracha}
             title="Borracha (Apagar Traços)"
-            className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold transition-all shadow-sm ${
+            className={`px-3 min-h-11 sm:min-h-0 sm:py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold transition-all shadow-sm ${
               ferramenta === 'borracha'
                 ? 'bg-[#5C3D2E] text-white ring-2 ring-[#8B5A2B] scale-105'
                 : 'bg-[#EDE6DB] text-[#5C3D2E] hover:bg-[#D5C7B5]'
@@ -124,7 +124,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             id="tool-carimbo-x"
             onClick={() => onSelectCarimbo('carimbo_x')}
             title="Rodopio de Pelos"
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+            className={`px-3 min-h-11 sm:min-h-0 sm:py-1.5 rounded-lg text-xs font-bold border transition-all ${
               ferramenta === 'carimbo_x'
                 ? 'bg-[#1B5E20] text-white border-[#1B5E20] shadow-md scale-105'
                 : 'bg-[#FAF8F5] text-[#1B5E20] border-[#C8E6C9] hover:bg-[#E8F5E9]'
@@ -138,7 +138,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             id="tool-carimbo-espiga"
             onClick={() => onSelectCarimbo('carimbo_espiga')}
             title="Espiga (gire a seta abaixo para a direção correta)"
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
+            className={`px-3 min-h-11 sm:min-h-0 sm:py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
               ferramenta === 'carimbo_espiga'
                 ? 'bg-[#1B5E20] text-white border-[#1B5E20] shadow-md scale-105'
                 : 'bg-[#FAF8F5] text-[#1B5E20] border-[#C8E6C9] hover:bg-[#E8F5E9]'

@@ -17,6 +17,9 @@ const COAT_SHEETS: Record<string, { files: string[]; columns: number; rows: numb
 };
 
 export function pelagemSprite(grupo: string, index: number): Sprite {
+  if (grupo === 'Pelagens Conjugadas e Compostas' && index === 14) {
+    return { file: 'persa-leopardo.jpg', columns: 1, rows: 1, index: 0 };
+  }
   const sheet = COAT_SHEETS[grupo];
   if (!sheet) throw new Error(`Prancha de pelagem não encontrada: ${grupo}`);
   return {

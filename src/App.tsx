@@ -40,6 +40,8 @@ const STORAGE_KEY = 'amorimpec_resenhas_v1';
 export default function App() {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [rascunhoCarregado, setRascunhoCarregado] = useState(false);
+  const [estadoSalvamento, setEstadoSalvamento] = useState<'salvando' | 'salvo' | 'erro'>('salvando');
+  const versaoSalvamento = useRef(0);
   const [data, setData] = useState<ResenhaData>(INITIAL_DATA);
   const [historicoMarcas, setHistoricoMarcas] = useState<string[]>([]);
   // true assim que o resenhador digitar qualquer coisa no campo de texto da
@@ -79,9 +81,15 @@ export default function App() {
 
   useEffect(() => {
     if (!rascunhoCarregado) return;
+    const versao = ++versaoSalvamento.current;
+    setEstadoSalvamento('salvando');
     const temporizador = window.setTimeout(() => {
       salvarRascunho({ data, historicoMarcas, desenhos: desenhosSnapshot, descricaoEditadaManualmente, currentStep, updatedAt: Date.now() })
-        .catch((erro) => console.warn('Não foi possível salvar o rascunho', erro));
+        .then(() => { if (versao === versaoSalvamento.current) setEstadoSalvamento('salvo'); })
+        .catch((erro) => {
+          console.warn('Não foi possível salvar o rascunho', erro);
+          if (versao === versaoSalvamento.current) setEstadoSalvamento('erro');
+        });
     }, 600);
     return () => window.clearTimeout(temporizador);
   }, [rascunhoCarregado, data, historicoMarcas, desenhosSnapshot, descricaoEditadaManualmente, currentStep]);
@@ -257,6 +265,13 @@ export default function App() {
           currentStep={currentStep}
           onStepClick={handleStepClick}
         />
+        <div className="max-w-4xl mx-auto -mt-3 mb-6 flex items-center justify-between gap-3 px-1 text-xs text-[#5C3D2E]">
+          <p className="font-medium">Sua ficha fica neste aparelho e pode ser retomada depois.</p>
+          <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 font-semibold ${estadoSalvamento === 'erro' ? 'bg-red-50 text-red-700' : estadoSalvamento === 'salvo' ? 'bg-[#E8F5E9] text-[#1B5E20]' : 'bg-[#F5EBE6] text-[#8B5A2B]'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${estadoSalvamento === 'erro' ? 'bg-red-600' : estadoSalvamento === 'salvo' ? 'bg-[#2E7D32]' : 'bg-[#B87333]'}`} />
+            {estadoSalvamento === 'erro' ? 'Não foi possível salvar' : estadoSalvamento === 'salvo' ? 'Salvo' : 'Salvando...'}
+          </span>
+        </div>
 
         {/* Passo 1: Dados do Proprietário, Resenhador e Animal */}
         {currentStep === 1 && (
