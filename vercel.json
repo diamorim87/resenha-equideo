@@ -1,0 +1,20 @@
+{
+  "redirects": [
+    { "source": "/manual-gerado/alaza.png", "destination": "/manual-gerado/alaza.jpg", "permanent": false },
+    { "source": "/manual-gerado/asininos-muares.png", "destination": "/manual-gerado/asininos-muares.jpg", "permanent": false },
+    { "source": "/manual-gerado/baia.png", "destination": "/manual-gerado/baia.jpg", "permanent": false },
+    { "source": "/manual-gerado/bebe-em-branco.png", "destination": "/manual-gerado/bebe-em-branco.jpg", "permanent": false },
+    { "source": "/manual-gerado/cabeca-1.png", "destination": "/manual-gerado/cabeca-1.jpg", "permanent": false },
+    { "source": "/manual-gerado/cabeca-2.png", "destination": "/manual-gerado/cabeca-2.jpg", "permanent": false },
+    { "source": "/manual-gerado/cabeca-3.png", "destination": "/manual-gerado/cabeca-3.jpg", "permanent": false },
+    { "source": "/manual-gerado/castanha.png", "destination": "/manual-gerado/castanha.jpg", "permanent": false },
+    { "source": "/manual-gerado/compostas-1.png", "destination": "/manual-gerado/compostas-1.jpg", "permanent": false },
+    { "source": "/manual-gerado/compostas-2.png", "destination": "/manual-gerado/compostas-2.jpg", "permanent": false },
+    { "source": "/manual-gerado/compostas-3.png", "destination": "/manual-gerado/compostas-3.jpg", "permanent": false },
+    { "source": "/manual-gerado/corpo-1.png", "destination": "/manual-gerado/corpo-1.jpg", "permanent": false },
+    { "source": "/manual-gerado/corpo-2.png", "destination": "/manual-gerado/corpo-2.jpg", "permanent": false },
+    { "source": "/manual-gerado/cremelo-branco.png", "destination": "/manual-gerado/cremelo-branco.jpg", "permanent": false },
+    { "source": "/manual-gerado/preta.png", "destination": "/manual-gerado/preta.jpg", "permanent": false },
+    { "source": "/manual-gerado/tordilha.png", "destination": "/manual-gerado/tordilha.jpg", "permanent": false }
+  ]
+}
