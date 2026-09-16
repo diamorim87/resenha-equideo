@@ -1,28 +1,8 @@
-import React from 'react';
-import { X, BookOpen, Check, Award, HelpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, BookOpen, Award, Search } from 'lucide-react';
 import { GRUPOS_PELAGENS } from '../data/pelagens';
 import { MarcaDiagrama, MarcaCabecaId, MarcaCorpoId } from './MarcaDiagrama';
-import fotoCremelo from '../assets/manual/cremelo.jpg';
-import fotoPreta from '../assets/manual/preta.jpg';
-import fotoAlaza from '../assets/manual/alaza.jpg';
-import fotoCastanha from '../assets/manual/castanha.jpg';
-import fotoBaia from '../assets/manual/baia.jpg';
-import fotoTordilho from '../assets/manual/tordilho.jpg';
-import fotoPeloDeRato from '../assets/manual/pelo-de-rato.jpg';
-import fotoApaloosa from '../assets/manual/apaloosa.jpg';
-
-// Uma foto de referência por grupo de pelagem (as 34 variações específicas
-// dentro de cada grupo ainda não têm foto própria — fica para uma próxima leva)
-const FOTO_POR_GRUPO: Record<string, string> = {
-  'Cremelo e Branco': fotoCremelo,
-  'Preta': fotoPreta,
-  'Alazã': fotoAlaza,
-  'Castanha': fotoCastanha,
-  'Baia': fotoBaia,
-  'Tordilha': fotoTordilho,
-  'Asininos e Muares Exclusivos': fotoPeloDeRato,
-  'Pelagens Conjugadas e Compostas': fotoApaloosa,
-};
+import { ManualIllustration, marcaSprite, pelagemSprite } from './ManualIllustration';
 
 interface GuideModalProps {
   isOpen: boolean;
@@ -54,11 +34,20 @@ const PARTICULARIDADES_CORPO: { id: MarcaCorpoId; nome: string; descricao: strin
 ];
 
 export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
+  const [busca, setBusca] = useState('');
+  const [aba, setAba] = useState<'pelagens' | 'cabeca' | 'corpo' | 'simbolos'>('pelagens');
   if (!isOpen) return null;
+
+  const termo = busca.trim().toLocaleLowerCase('pt-BR');
+  const gruposVisiveis = GRUPOS_PELAGENS.map((grupo) => ({
+    ...grupo,
+    opcoes: grupo.opcoes.map((opcao, index) => ({ ...opcao, index }))
+      .filter((opcao) => !termo || `${opcao.nome} ${grupo.grupo}`.toLocaleLowerCase('pt-BR').includes(termo)),
+  })).filter((grupo) => grupo.opcoes.length > 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-[#FAF8F5] rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border-4 border-[#8B5A2B]">
+      <div role="dialog" aria-modal="true" aria-labelledby="titulo-manual" className="bg-[#FAF8F5] rounded-3xl max-w-5xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-[#D6C4AB]">
         {/* Modal Header */}
         <div className="bg-[#1B5E20] text-white p-5 flex items-center justify-between border-b-2 border-[#8B5A2B]">
           <div className="flex items-center gap-3">
@@ -66,27 +55,42 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold font-serif text-[#FAF8F5]">
+              <h3 id="titulo-manual" className="text-lg font-bold font-serif text-[#FAF8F5]">
                 Manual Zootécnico de Resenha Equina
               </h3>
               <p className="text-xs text-[#C8E6C9]">
-                Catálogo oficial de pelagens, particularidades da cabeça e membros
+                Cartilha visual de pelagens e particularidades
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
+            aria-label="Fechar manual"
             className="w-9 h-9 rounded-full bg-[#2E7D32] hover:bg-[#388E3C] text-white flex items-center justify-center transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        <nav aria-label="Seções do manual" className="flex gap-1 overflow-x-auto bg-white px-4 sm:px-6 py-2 border-b border-[#EDE6DB] shrink-0">
+          {([
+            ['pelagens', 'Pelagens'],
+            ['cabeca', 'Marcas da cabeça'],
+            ['corpo', 'Marcas do corpo'],
+            ['simbolos', 'Símbolos'],
+          ] as const).map(([id, rotulo]) => (
+            <button key={id} type="button" onClick={() => setAba(id)} aria-current={aba === id ? 'page' : undefined}
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-xs sm:text-sm font-semibold transition-colors ${aba === id ? 'bg-[#1B5E20] text-white' : 'text-[#5C3D2E] hover:bg-[#F1E9DD]'}`}>
+              {rotulo}
+            </button>
+          ))}
+        </nav>
+
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-6 text-sm text-[#2C3E50]">
+        <div key={aba} className="p-4 sm:p-6 overflow-y-auto space-y-6 text-sm text-[#2C3E50]">
           {/* 1. Símbolos Oficiais e Convenções Gráficas */}
-          <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
+          {aba === 'simbolos' && <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
             <h4 className="font-bold font-serif text-[#1B5E20] text-base mb-3 flex items-center gap-2">
               <Award className="w-4 h-4 text-[#8B5A2B]" />
               Símbolos e Convenções Gráficas Oficiais
@@ -128,18 +132,20 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
                 </p>
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* 2. Particularidades da Cabeça */}
-          <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
+          {aba === 'cabeca' && <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
             <h4 className="font-bold font-serif text-[#5C3D2E] text-base mb-3">
               Particularidades Anatômicas da Cabeça
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              {PARTICULARIDADES_CABECA.map((item) => (
+            <p className="text-xs text-[#6B7280] mb-3">Figura criada por IA ao lado do esquema usado para orientar a marcação. Confira a peculiaridade no animal antes de registrá-la.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+              {PARTICULARIDADES_CABECA.map((item, index) => (
                 <div key={item.id} className="rounded-lg bg-[#FAF8F5] border border-[#EDE6DB] overflow-hidden flex flex-col">
-                  <div className="w-full aspect-[497/1020]">
-                    <MarcaDiagrama tipo="cabeca" id={item.id} className="w-full h-full" />
+                  <div className="grid grid-cols-[1fr_0.48fr] gap-1 p-1">
+                    <ManualIllustration sprite={marcaSprite('cabeca', index)} alt={`Ilustração de ${item.nome}`} className="rounded-md" />
+                    <MarcaDiagrama tipo="cabeca" id={item.id} className="w-full h-full rounded-md bg-white" />
                   </div>
                   <div className="p-2">
                     <strong className="text-[#8B5A2B] block mb-0.5">{item.nome}</strong>
@@ -148,18 +154,19 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* 3. Particularidades do Corpo */}
-          <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
+          {aba === 'corpo' && <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
             <h4 className="font-bold font-serif text-[#5C3D2E] text-base mb-3">
               Particularidades Anatômicas do Corpo
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              {PARTICULARIDADES_CORPO.map((item) => (
-                <div key={item.id} className="rounded-lg bg-[#FAF8F5] border border-[#EDE6DB] overflow-hidden flex flex-col sm:flex-row">
-                  <div className="w-full sm:w-32 aspect-[999/1003] shrink-0">
-                    <MarcaDiagrama tipo="corpo" id={item.id} className="w-full h-full" />
+              {PARTICULARIDADES_CORPO.map((item, index) => (
+                <div key={item.id} className="rounded-lg bg-[#FAF8F5] border border-[#EDE6DB] overflow-hidden flex flex-col">
+                  <div className="grid grid-cols-2 gap-1 p-1">
+                    <ManualIllustration sprite={marcaSprite('corpo', index)} alt={`Ilustração de ${item.nome}`} className="rounded-md" />
+                    <MarcaDiagrama tipo="corpo" id={item.id} className="w-full h-full rounded-md bg-white" />
                   </div>
                   <div className="p-2.5">
                     <strong className="text-[#8B5A2B] block mb-0.5">{item.nome}</strong>
@@ -168,48 +175,41 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* 4. Catálogo de Pelagens */}
-          <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
-            <h4 className="font-bold font-serif text-[#1B5E20] text-base mb-3">
-              Catálogo Oficial de Pelagens Brasileiras
-            </h4>
-            <p className="text-xs text-[#6B7280] mb-3 italic">
-              Foto de referência por grupo — as variações específicas dentro de cada grupo ainda não têm foto própria.
-            </p>
-            <div className="space-y-3">
-              {GRUPOS_PELAGENS.map((grp) => {
-                const foto = FOTO_POR_GRUPO[grp.grupo];
-                return (
-                  <div key={grp.grupo} className="border-b border-[#EDE6DB] pb-3 last:border-b-0 flex gap-3">
-                    {foto && (
-                      <img
-                        src={foto}
-                        alt={`Exemplo de pelagem ${grp.grupo}`}
-                        className="w-20 h-20 object-cover rounded-lg border border-[#D4A373] shrink-0"
-                      />
-                    )}
-                    <div className="min-w-0">
-                      <span className="font-bold text-xs uppercase tracking-wider text-[#8B5A2B] block mb-1">
-                        {grp.grupo}
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {grp.opcoes.map((op) => (
-                          <span
-                            key={op.valor}
-                            className="inline-block text-[11px] px-2 py-0.5 rounded-md bg-[#FAF8F5] border border-[#EDE6DB] text-[#2C3E50]"
-                          >
-                            {op.nome}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+          {aba === 'pelagens' && <div className="bg-white p-5 rounded-2xl border border-[#EDE6DB] shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
+              <div>
+                <h4 className="font-bold font-serif text-[#1B5E20] text-lg">Cartilha visual de pelagens</h4>
+                <p className="text-xs text-[#6B7280] mt-1">Uma figura para cada pelagem do seletor da ficha. As imagens de animais fictícios foram geradas por IA e servem para comparação visual; a identificação exige observação do animal.</p>
+              </div>
+              <label className="relative block shrink-0 sm:w-56">
+                <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
+                <span className="sr-only">Buscar pelagem</span>
+                <input type="search" value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar pelagem..." className="w-full rounded-xl border border-[#D6C4AB] bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-[#1B5E20] focus:ring-2 focus:ring-[#1B5E20]/20" />
+              </label>
             </div>
-          </div>
+            {gruposVisiveis.length === 0 && <p className="rounded-xl bg-[#FAF8F5] p-5 text-[#6B7280]">Nenhuma pelagem encontrada para “{busca}”.</p>}
+            <div className="space-y-6">
+              {gruposVisiveis.map((grp) => (
+                <section key={grp.grupo} aria-label={grp.grupo}>
+                  <h5 className="font-bold text-xs uppercase tracking-wider text-[#8B5A2B] mb-2">{grp.grupo} <span className="font-normal text-[#6B7280]">· {grp.opcoes.length}</span></h5>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {grp.opcoes.map((op) => (
+                      <article key={op.valor} className="overflow-hidden rounded-xl border border-[#EDE6DB] bg-[#FAF8F5] shadow-sm">
+                        <ManualIllustration sprite={pelagemSprite(grp.grupo, op.index)} alt={`Animal fictício com pelagem ${op.valor}`} />
+                        <div className="p-2.5">
+                          <strong className="block text-xs leading-snug text-[#2C3E50]">{op.valor}</strong>
+                          {op.nome !== op.valor && <p className="text-[11px] leading-snug text-[#6B7280] mt-0.5">{op.nome}</p>}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </div>}
         </div>
 
         {/* Modal Footer */}
