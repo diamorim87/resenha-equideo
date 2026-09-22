@@ -6,7 +6,9 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
@@ -27,6 +29,20 @@ class AlarmRingService : Service() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var passoVolume = 0
+
+    private val aumentarVolume = object : Runnable {
+        override fun run() {
+            passoVolume++
+            val progresso = passoVolume.toFloat() / PASSOS_VOLUME
+            // Quadrático porque a percepção de volume não é linear: subida linear parece
+            // chegar ao máximo cedo demais.
+            val volume = VOLUME_INICIAL + (1f - VOLUME_INICIAL) * progresso * progresso
+            mediaPlayer?.setVolume(volume, volume)
+            if (passoVolume < PASSOS_VOLUME) handler.postDelayed(this, INTERVALO_VOLUME_MS)
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -43,6 +59,9 @@ class AlarmRingService : Service() {
             fonte = Fonte.valueOf(intent?.getStringExtra(EXTRA_FONTE) ?: Fonte.BIBLIA.name),
         )
         startForeground(NotificationHelper.ID_NOTIFICACAO, NotificationHelper(this).criarNotificacaoAlarme(passagem))
+        // Um segundo disparo com o primeiro ainda tocando (ex.: teste + alarme real) reinicia
+        // o som em vez de deixar um MediaPlayer órfão tocando para sempre.
+        pararSomEVibracao()
         tocarEVibrar()
         return START_NOT_STICKY
     }
@@ -61,8 +80,11 @@ class AlarmRingService : Service() {
                 setDataSource(this@AlarmRingService, uriAlarme)
                 isLooping = true
                 prepare()
+                setVolume(VOLUME_INICIAL, VOLUME_INICIAL)
                 start()
             }
+            passoVolume = 0
+            handler.postDelayed(aumentarVolume, INTERVALO_VOLUME_MS)
         } catch (erro: Exception) {
             Log.w("AlarmRingService", "Não foi possível tocar o som do alarme", erro)
         }
@@ -72,13 +94,18 @@ class AlarmRingService : Service() {
         vibrator?.vibrate(VibrationEffect.createWaveform(padrao, 0))
     }
 
-    private fun pararTudo() {
+    private fun pararSomEVibracao() {
+        handler.removeCallbacks(aumentarVolume)
         mediaPlayer?.apply {
             runCatching { stop() }
             release()
         }
         mediaPlayer = null
         vibrator?.cancel()
+    }
+
+    private fun pararTudo() {
+        pararSomEVibracao()
         stopForeground(STOP_FOREGROUND_REMOVE)
     }
 
@@ -89,6 +116,9 @@ class AlarmRingService : Service() {
 
     companion object {
         private const val ACAO_PARAR = "com.amorim.motivacaododia.action.PARAR_ALARME"
+        private const val VOLUME_INICIAL = 0.1f
+        private const val PASSOS_VOLUME = 30
+        private const val INTERVALO_VOLUME_MS = 1_000L
         private const val EXTRA_TEXTO = "extra_texto"
         private const val EXTRA_REFERENCIA = "extra_referencia"
         private const val EXTRA_FONTE = "extra_fonte"

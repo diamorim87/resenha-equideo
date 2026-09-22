@@ -21,8 +21,7 @@ class MotivacaoRepository(context: Context) {
         val resultado = seletor.passagemDeHoje(
             hoje = hoje,
             estado = estadoAtual,
-            listaBiblia = passagens.passagensDaBiblia(),
-            listaMarcoAurelio = passagens.passagensDeMarcoAurelio(),
+            listas = passagens.passagensPorFonte(),
         )
         if (resultado.novoEstado != estadoAtual) {
             configuracoes.salvarEstado(resultado.novoEstado)

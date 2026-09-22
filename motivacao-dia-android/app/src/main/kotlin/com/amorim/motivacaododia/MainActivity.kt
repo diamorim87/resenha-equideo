@@ -50,7 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.amorim.motivacaododia.alarm.AlarmScheduler
-import com.amorim.motivacaododia.core.Fonte
 import com.amorim.motivacaododia.core.Passagem
 import com.amorim.motivacaododia.core.SelecaoDiaria
 import com.amorim.motivacaododia.data.ConfiguracoesRepository
@@ -292,11 +291,7 @@ private fun CartaoPassagemDoDia(passagem: Passagem?) {
             )
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = when (passagem?.fonte) {
-                        Fonte.BIBLIA -> "Passagem de hoje · Bíblia"
-                        Fonte.MARCO_AURELIO -> "Passagem de hoje · Meditações"
-                        null -> "Carregando a passagem de hoje…"
-                    },
+                    text = passagem?.let { "Passagem de hoje · ${it.fonte.rotulo}" } ?: "Carregando a passagem de hoje…",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

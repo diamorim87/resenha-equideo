@@ -3,6 +3,7 @@ package com.amorim.motivacaododia.core
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class PassagemSelectorTest {
@@ -10,16 +11,16 @@ class PassagemSelectorTest {
     private val selector = PassagemSelector()
 
     @Test
-    fun `dia par do ano seleciona Biblia`() {
+    fun `dia par do ano e dia da Biblia`() {
         listOf(2, 4, 60, 300, 366).forEach { dia ->
-            assertEquals(Fonte.BIBLIA, selector.fonteDoDia(dia), "dia $dia deveria ser Bíblia")
+            assertTrue(selector.ehDiaDaBiblia(dia), "dia $dia deveria ser Bíblia")
         }
     }
 
     @Test
-    fun `dia impar do ano seleciona Marco Aurelio`() {
+    fun `dia impar do ano nao e dia da Biblia`() {
         listOf(1, 3, 59, 301, 365).forEach { dia ->
-            assertEquals(Fonte.MARCO_AURELIO, selector.fonteDoDia(dia), "dia $dia deveria ser Marco Aurélio")
+            assertFalse(selector.ehDiaDaBiblia(dia), "dia $dia deveria ser de um estoico")
         }
     }
 

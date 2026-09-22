@@ -27,6 +27,8 @@ class PassagemRepository(private val context: Context) {
                 val fonte = when (item.getString("fonte")) {
                     "biblia" -> Fonte.BIBLIA
                     "marco_aurelio" -> Fonte.MARCO_AURELIO
+                    "seneca" -> Fonte.SENECA
+                    "epicteto" -> Fonte.EPICTETO
                     else -> continue
                 }
                 add(
@@ -42,9 +44,7 @@ class PassagemRepository(private val context: Context) {
         return lista
     }
 
-    fun passagensDaBiblia(): List<Passagem> = todasAsPassagens().filter { it.fonte == Fonte.BIBLIA }
-
-    fun passagensDeMarcoAurelio(): List<Passagem> = todasAsPassagens().filter { it.fonte == Fonte.MARCO_AURELIO }
+    fun passagensPorFonte(): Map<Fonte, List<Passagem>> = todasAsPassagens().groupBy { it.fonte }
 
     companion object {
         private const val ARQUIVO_ASSET = "passagens.json"

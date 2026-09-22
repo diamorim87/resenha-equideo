@@ -131,10 +131,7 @@ private fun TelaAlarme(passagem: Passagem, aoDispensar: () -> Unit) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = when (passagem.fonte) {
-                    Fonte.BIBLIA -> "Bíblia"
-                    Fonte.MARCO_AURELIO -> "Meditações"
-                },
+                text = passagem.fonte.rotulo,
                 style = MaterialTheme.typography.labelLarge,
                 color = corAcentoFonte(passagem.fonte),
                 fontWeight = FontWeight.Bold,

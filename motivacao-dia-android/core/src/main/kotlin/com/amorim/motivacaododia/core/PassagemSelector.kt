@@ -1,14 +1,13 @@
 package com.amorim.motivacaododia.core
 
 /**
- * Regras puras de seleção: qual fonte usar em cada dia do ano, e como
- * rotacionar dentro de uma lista sem repetir nenhum item até esgotá-la.
+ * Regras puras de seleção: se o dia do ano é da Bíblia (pares) ou de um estoico (ímpares),
+ * e como rotacionar dentro de uma lista sem repetir nenhum item até esgotá-la.
  * Não depende de Android para poder ser testada em JVM puro.
  */
 class PassagemSelector {
 
-    fun fonteDoDia(diaDoAno: Int): Fonte =
-        if (diaDoAno % 2 == 0) Fonte.BIBLIA else Fonte.MARCO_AURELIO
+    fun ehDiaDaBiblia(diaDoAno: Int): Boolean = diaDoAno % 2 == 0
 
     /**
      * [indiceSalvo] é o próximo índice a usar nesta fonte (persistido entre execuções).

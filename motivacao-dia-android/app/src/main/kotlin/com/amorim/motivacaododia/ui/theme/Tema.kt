@@ -82,7 +82,5 @@ fun MotivacaoDoDiaTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-fun corAcentoFonte(fonte: Fonte) = when (fonte) {
-    Fonte.BIBLIA -> MaterialTheme.colorScheme.secondary
-    Fonte.MARCO_AURELIO -> MaterialTheme.colorScheme.primary
-}
+fun corAcentoFonte(fonte: Fonte) =
+    if (fonte == Fonte.BIBLIA) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
