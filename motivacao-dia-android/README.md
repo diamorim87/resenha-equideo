@@ -12,11 +12,17 @@ Este projeto foi escrito num container Linux sem acesso a `dl.google.com`
 
 - O módulo `core` (lógica pura de seleção/rotação, sem depender do Android) foi
   **compilado e testado com sucesso** aqui — `./gradlew :core:test` passa com
-  10 testes verdes.
+  10 testes verdes (isso foi validado antes do Android Gradle Plugin ser
+  adicionado ao classpath compartilhado do root; ver nota abaixo).
 - O módulo `app` (o app Android em si) **não pôde ser compilado neste
   ambiente**, porque o Android Gradle Plugin e as platforms/build-tools do SDK
   só são baixados de `dl.google.com`. O código está completo, mas o `.apk`
   precisa ser gerado em uma máquina com o Android SDK instalado (ver abaixo).
+  O `com.android.application` é declarado com `apply false` em
+  `build.gradle.kts` (raiz) para compartilhar classloader com os plugins
+  Kotlin — isso é necessário para o `:app` compilar, mas como efeito colateral
+  também faz `./gradlew :core:test` precisar resolver o AGP mesmo rodando só
+  o módulo `core`.
 
 Revise o código-fonte antes de instalar no aparelho, como faria com qualquer
 app; eu não pude rodar `assembleDebug` para confirmar que compila sem erros.
