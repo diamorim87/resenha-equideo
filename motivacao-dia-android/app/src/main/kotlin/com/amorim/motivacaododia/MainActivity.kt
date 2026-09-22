@@ -107,6 +107,14 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
         ActivityResultContracts.RequestPermission(),
     ) { atualizarStatusPermissoes() }
 
+    // ACTION_REQUEST_SCHEDULE_EXACT_ALARM e ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS não
+    // devolvem um resultado usável (o usuário pode voltar sem decidir nada, ou já sair
+    // autorizado); por isso usamos StartActivityForResult só para saber QUANDO o usuário
+    // voltou dessa tela e reconsultar o status real via atualizarStatusPermissoes().
+    val lancadorConfiguracoesSistema = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { atualizarStatusPermissoes() }
+
     LaunchedEffect(Unit) {
         val passagem = repositorio.passagemDeHoje()
         val horario = repositorio.horarioConfigurado()
@@ -175,7 +183,7 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
             textoBotao = "Ajustar",
             onCorrigir = {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    context.startActivity(
+                    lancadorConfiguracoesSistema.launch(
                         Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
                             data = Uri.parse("package:${context.packageName}")
                         },
@@ -189,7 +197,7 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
             concedida = estado.bateriaOtimizacaoIgnorada,
             textoBotao = "Ajustar",
             onCorrigir = {
-                context.startActivity(
+                lancadorConfiguracoesSistema.launch(
                     Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                         data = Uri.parse("package:${context.packageName}")
                     },
