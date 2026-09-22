@@ -32,6 +32,12 @@ private val EsquemaClaro = lightColorScheme(
     onSurface = TintaNoite,
     surfaceVariant = AmbarSuave,
     onSurfaceVariant = TintaNoite,
+    // Cards do M3 usam surfaceContainerHighest; sem isso herdam o lilás padrão do Material.
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFFDF9F2),
+    surfaceContainer = Color(0xFFF9F2E6),
+    surfaceContainerHigh = Color(0xFFF6EEE0),
+    surfaceContainerHighest = Color(0xFFF3EADB),
     error = Color(0xFFB3392C),
 )
 
@@ -46,6 +52,11 @@ private val EsquemaEscuro = darkColorScheme(
     onSurface = Color(0xFFF3E9D8),
     surfaceVariant = Color(0xFF352A1E),
     onSurfaceVariant = Color(0xFFF3E9D8),
+    surfaceContainerLowest = Color(0xFF120F0B),
+    surfaceContainerLow = Color(0xFF1E1914),
+    surfaceContainer = Color(0xFF221C16),
+    surfaceContainerHigh = Color(0xFF2A231B),
+    surfaceContainerHighest = Color(0xFF30281F),
     error = Color(0xFFE1897B),
 )
 
