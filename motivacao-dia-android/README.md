@@ -1,9 +1,11 @@
 # Motivação do Dia
 
 App Android nativo, 100% offline. Todo dia no horário configurado (padrão 06:10,
-horário do próprio aparelho), mostra uma notificação com uma passagem curta,
-alternando por dia entre a Bíblia (dias pares) e "Meditações" de Marco Aurélio
-(dias ímpares). Sem servidor, sem login, sem internet.
+horário do próprio aparelho), toca um alarme de verdade — som + vibração, em
+tela cheia mesmo com o aparelho bloqueado — com uma passagem curta, alternando
+por dia entre a Bíblia (dias pares) e "Meditações" de Marco Aurélio (dias
+ímpares). Também tem um card fixo "Antes de dormir" com uma reflexão diferente
+a cada dia. Sem servidor, sem login, sem internet.
 
 ## ⚠️ Limitação deste ambiente de build
 
@@ -61,7 +63,11 @@ Depois de instalar, abra o app uma vez para:
 1. Conceder a permissão de notificações.
 2. Tocar em "Ajustar" ao lado de "Alarmes exatos" (Android 12+) e autorizar.
 3. Tocar em "Ajustar" ao lado de "Ignorar otimização de bateria" e autorizar.
-4. Ler o aviso do fabricante detectado e, se aplicável, seguir as instruções
+4. Tocar em "Ajustar" ao lado de "Alarme em tela cheia" (Android 14+) e
+   autorizar — sem isso, o alarme ainda toca e vibra, mas o Android só mostra
+   uma notificação normal em vez de abrir a tela de alarme automaticamente
+   quando o aparelho está bloqueado.
+5. Ler o aviso do fabricante detectado e, se aplicável, seguir as instruções
    do dontkillmyapp.com para esse aparelho (alguns fabricantes — Xiaomi,
    Samsung, Huawei etc. — matam apps em segundo plano de forma agressiva por
    padrão).
@@ -94,13 +100,22 @@ mexer no código — o horário padrão (06:10, usado só na primeira abertura) 
 em `ConfiguracoesRepository.HORA_PADRAO` / `MINUTO_PADRAO`, em
 `app/src/main/kotlin/com/amorim/motivacaododia/data/ConfiguracoesRepository.kt`.
 
-## Como funciona o agendamento
+## Como funciona o agendamento e o alarme
 
 - `AlarmManager.setAlarmClock()` — não `setRepeating()` nem `WorkManager`
   periódico — porque é o único mecanismo tratado pelo Android como alarme de
   despertador, sobrevivendo ao modo Doze e a apps mortos em segundo plano.
-- Cada disparo do `AlarmReceiver` mostra a notificação e já agenda o alarme do
-  dia seguinte.
+- Cada disparo do `AlarmReceiver` inicia o `AlarmRingService` (um foreground
+  service) e já agenda o alarme do dia seguinte. O serviço toca o som padrão
+  de alarme do aparelho em loop (`MediaPlayer` no volume de alarme) e vibra,
+  e publica uma notificação com `fullScreenIntent` apontando para a
+  `AlarmActivity`.
+- Com o aparelho bloqueado ou a tela apagada, o Android abre a `AlarmActivity`
+  automaticamente por cima da tela de bloqueio. Com a tela acesa e
+  desbloqueada, ele só mostra uma notificação heads-up (comportamento do
+  próprio Android desde a versão 10) — toque nela pra abrir a tela do alarme.
+- `AlarmActivity` mostra a passagem do dia e um botão "Dispensar", que para o
+  som/vibração e encerra o `AlarmRingService`.
 - `BootReceiver` reagenda em `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`,
   `TIME_SET` e `TIMEZONE_CHANGED`.
 - A tela principal também reagenda toda vez que é aberta (idempotente — só
@@ -128,7 +143,12 @@ cd motivacao-dia-android
 
 Cobrem: alternância Bíblia/Marco Aurélio por paridade do dia do ano, rotação
 sequencial sem repetir item até esgotar cada lista, reinício do ciclo após
-esgotar, e idempotência ao reabrir o app no mesmo dia.
+esgotar, idempotência ao reabrir o app no mesmo dia, e a escolha determinística
+da mensagem de "Antes de dormir" pelo dia do ano.
+
+Isso cobre a lógica pura testável em JVM — a parte de tocar som/vibração e
+abrir tela em cima do bloqueio (`AlarmActivity`, `AlarmRingService`) só dá pra
+validar em aparelho real, não em teste automatizado.
 
 ## Não publicar na Play Store
 

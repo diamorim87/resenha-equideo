@@ -1,6 +1,7 @@
 package com.amorim.motivacaododia
 
 import android.Manifest
+import android.app.NotificationManager
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.net.Uri
@@ -12,16 +13,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,11 +50,17 @@ import androidx.core.content.ContextCompat
 import com.amorim.motivacaododia.alarm.AlarmScheduler
 import com.amorim.motivacaododia.core.Fonte
 import com.amorim.motivacaododia.core.Passagem
+import com.amorim.motivacaododia.core.SelecaoDiaria
 import com.amorim.motivacaododia.data.ConfiguracoesRepository
 import com.amorim.motivacaododia.data.Horario
+import com.amorim.motivacaododia.data.MensagensBoaNoite
 import com.amorim.motivacaododia.data.MotivacaoRepository
+import com.amorim.motivacaododia.ui.theme.MotivacaoDoDiaTheme
+import com.amorim.motivacaododia.ui.theme.corAcentoFonte
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -59,8 +73,8 @@ class MainActivity : ComponentActivity() {
         repositorio = MotivacaoRepository(applicationContext)
 
         setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+            MotivacaoDoDiaTheme {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     TelaPrincipal(repositorio = repositorio)
                 }
             }
@@ -76,13 +90,27 @@ private data class EstadoTela(
     val notificacoesPermitidas: Boolean = true,
     val alarmesExatosPermitidos: Boolean = true,
     val bateriaOtimizacaoIgnorada: Boolean = false,
+    val telaCheiaPermitida: Boolean = true,
 )
+
+private fun saudacaoAtual(hora: Int = LocalTime.now().hour): String = when (hora) {
+    in 5..11 -> "Bom dia"
+    in 12..17 -> "Boa tarde"
+    else -> "Boa noite"
+}
+
+private fun mensagemBoaNoiteDeHoje(): String {
+    val lista = MensagensBoaNoite.lista
+    val indice = SelecaoDiaria.indiceParaHoje(LocalDate.now().dayOfYear, lista.size)
+    return lista[indice]
+}
 
 @Composable
 private fun TelaPrincipal(repositorio: MotivacaoRepository) {
     val context = LocalContext.current
     val escopo = rememberCoroutineScope()
     var estado by remember { mutableStateOf(EstadoTela()) }
+    val mensagemNoite = remember { mensagemBoaNoiteDeHoje() }
 
     fun atualizarStatusPermissoes() {
         val notificacoesOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -94,11 +122,17 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
         val alarmesOk = AlarmScheduler.podeAgendarAlarmesExatos(context)
         val powerManager = context.getSystemService(PowerManager::class.java)
         val bateriaOk = powerManager?.isIgnoringBatteryOptimizations(context.packageName) ?: true
+        val telaCheiaOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            context.getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() ?: true
+        } else {
+            true
+        }
         val proximo = AlarmScheduler.proximoAlarmeAgendadoEm(context)?.let(::formatarInstante) ?: "—"
         estado = estado.copy(
             notificacoesPermitidas = notificacoesOk,
             alarmesExatosPermitidos = alarmesOk,
             bateriaOtimizacaoIgnorada = bateriaOk,
+            telaCheiaPermitida = telaCheiaOk,
             proximoAlarme = proximo,
         )
     }
@@ -107,10 +141,10 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
         ActivityResultContracts.RequestPermission(),
     ) { atualizarStatusPermissoes() }
 
-    // ACTION_REQUEST_SCHEDULE_EXACT_ALARM e ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS não
-    // devolvem um resultado usável (o usuário pode voltar sem decidir nada, ou já sair
-    // autorizado); por isso usamos StartActivityForResult só para saber QUANDO o usuário
-    // voltou dessa tela e reconsultar o status real via atualizarStatusPermissoes().
+    // ACTION_REQUEST_SCHEDULE_EXACT_ALARM, ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS e
+    // ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT não devolvem um resultado usável; usamos
+    // StartActivityForResult só para saber QUANDO o usuário voltou dessa tela e
+    // reconsultar o status real via atualizarStatusPermissoes().
     val lancadorConfiguracoesSistema = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
     ) { atualizarStatusPermissoes() }
@@ -133,11 +167,18 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-        )
+        Column {
+            Text(
+                text = saudacaoAtual(),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         CartaoPassagemDoDia(estado.passagem)
 
@@ -163,6 +204,8 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
                 ).show()
             },
         )
+
+        CartaoBoaNoite(mensagemNoite)
 
         Text(text = "Permissões", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
@@ -205,6 +248,21 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
             },
         )
 
+        LinhaPermissao(
+            titulo = "Alarme em tela cheia",
+            concedida = estado.telaCheiaPermitida,
+            textoBotao = "Ajustar",
+            onCorrigir = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    lancadorConfiguracoesSistema.launch(
+                        Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                        },
+                    )
+                }
+            },
+        )
+
         AvisoFabricante()
 
         Button(
@@ -213,7 +271,7 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Testar notificação (dispara em 10s)")
+            Text("Testar alarme (toca em 10s)")
         }
     }
 }
@@ -221,23 +279,51 @@ private fun TelaPrincipal(repositorio: MotivacaoRepository) {
 @Composable
 private fun CartaoPassagemDoDia(passagem: Passagem?) {
     Card(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+            Box(
+                modifier = Modifier
+                    .width(6.dp)
+                    .fillMaxHeight()
+                    .background(if (passagem != null) corAcentoFonte(passagem.fonte) else MaterialTheme.colorScheme.outline),
+            )
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = when (passagem?.fonte) {
+                        Fonte.BIBLIA -> "Passagem de hoje · Bíblia"
+                        Fonte.MARCO_AURELIO -> "Passagem de hoje · Meditações"
+                        null -> "Carregando a passagem de hoje…"
+                    },
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (passagem != null) {
+                    Text(text = passagem.texto, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "— ${passagem.referencia}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = corAcentoFonte(passagem.fonte),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CartaoBoaNoite(mensagem: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = when (passagem?.fonte) {
-                    Fonte.BIBLIA -> "Passagem de hoje — Bíblia"
-                    Fonte.MARCO_AURELIO -> "Passagem de hoje — Meditações"
-                    null -> "Carregando a passagem de hoje…"
-                },
+                text = "Antes de dormir",
                 style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
             )
-            if (passagem != null) {
-                Text(text = passagem.texto, style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    text = "— ${passagem.referencia}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
+            Text(text = mensagem, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }
