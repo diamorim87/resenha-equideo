@@ -1,6 +1,0 @@
-<resources>
-    <string name="app_name">Motivação do Dia</string>
-    <string name="canal_notificacao_nome">Alarme diário</string>
-    <string name="canal_notificacao_descricao">Alarme diário com uma passagem da Bíblia ou de um filósofo estoico</string>
-    <string name="notificacao_titulo">Motivação do dia</string>
-</resources>
